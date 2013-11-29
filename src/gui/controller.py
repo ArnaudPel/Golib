@@ -1,7 +1,7 @@
 from Queue import Queue, Full, Empty
 from Tkinter import Tk
 from threading import RLock
-from config.guiconf import rwidth
+from golib_conf import rwidth
 from go.kifu import Kifu
 
 from go.rules import Rule

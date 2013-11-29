@@ -1,6 +1,6 @@
 from Tkinter import Canvas
 import numpy as np
-from config.guiconf import gsize, rwidth
+from golib_conf import gsize, rwidth
 
 __author__ = 'Kohistan'
 

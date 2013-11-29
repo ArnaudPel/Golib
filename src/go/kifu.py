@@ -1,4 +1,4 @@
-from config.guiconf import gsize
+from golib_conf import gsize
 from go.sgf import Collection, GameTree, Node, Parser
 from go.sgfwarning import SgfWarning
 
