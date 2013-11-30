@@ -1,5 +1,4 @@
 from Tkinter import Canvas
-import numpy as np
 from golib_conf import gsize, rwidth
 
 __author__ = 'Kohistan'
@@ -8,7 +7,7 @@ __author__ = 'Kohistan'
 class Goban(Canvas):
     def __init__(self, master):
         Canvas.__init__(self, master, width=gsize * rwidth, height=gsize * rwidth)
-        self.stones = np.empty((gsize, gsize), dtype=np.object)
+        self.stones = [[None for _ in range(gsize)] for _ in range(gsize)]
         self.closed = False
         self._draw_board()
 

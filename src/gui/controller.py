@@ -211,13 +211,3 @@ class Controller(ControllerUnsafe):
     def _remove(self, move, method=None):
         with RLock():
             super(Controller, self)._remove(move, method)
-
-
-if __name__ == '__main__':
-    root = Tk()
-    #kifu = Kifu.parse("/Users/Kohistan/Documents/go/Perso Games/MrYamamoto-Kohistan.sgf")
-    kifu = Kifu.new()
-
-    app = UI(root)
-    control = ControllerUnsafe(kifu, app, app)
-    root.mainloop()

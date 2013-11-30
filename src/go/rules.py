@@ -12,9 +12,6 @@ made to that state.
 
 """
 
-import numpy as np
-
-
 class RuleUnsafe(object):
     """
     This class is not thread safe.
@@ -23,12 +20,9 @@ class RuleUnsafe(object):
     """
 
     def __init__(self):
-        self.stones = np.empty((gsize, gsize), dtype=np.str)
-        self.stones.fill('E')
+        self.stones = [['E' for _ in range(gsize)] for _ in range(gsize)]
         self.deleted = []
-
-        self.stones_buff = self.stones.copy()
-        self.deleted_buff = []
+        self.reset()  # initialize buffers
 
     def confirm(self):
         """
@@ -43,7 +37,7 @@ class RuleUnsafe(object):
 
     def reset(self):
         """ Clear any unconfirmed data. """
-        self.stones_buff = self.stones.copy()
+        self.stones_buff = [list(self.stones[row]) for row in range(gsize)]
         self.deleted_buff = list(self.deleted)
 
     def put(self, move, reset=True):
