@@ -1,13 +1,10 @@
 from Queue import Queue, Full, Empty
-from Tkinter import Tk
 from threading import RLock
 from golib_conf import rwidth
-from go.kifu import Kifu
 
 from go.rules import Rule
 from go.sgf import Move
 from gui.pipewarning import PipeWarning
-from gui.ui import UI
 
 
 __author__ = 'Kohistan'

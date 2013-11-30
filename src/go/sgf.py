@@ -49,13 +49,7 @@
 
 
 ### IMPORTS
-
-import string
-
-
-### CONSTANTS
-
-# map from numerical coordinates to letters used by SGF
+from string import join
 from go.sgfwarning import SgfWarning
 
 
@@ -247,9 +241,9 @@ class Node:
             for value in self.properties[prop]:
                 if type(value) is not int:
                     if "\\" in value:
-                        value = string.join(value.split("\\"), "\\\\")
+                        value = join(value.split("\\"), "\\\\")
                     if "]" in value:
-                        value = string.join(value.split("]"), "\]")
+                        value = join(value.split("]"), "\]")
                 f.write("[%s]" % value)
             f.write("\n")
 

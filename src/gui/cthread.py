@@ -1,6 +1,6 @@
 from Tkinter import Tk
 from threading import Thread
-import time
+from time import sleep
 from go.kifu import Kifu
 from gui.controller import Controller
 from gui.pipewarning import PipeWarning
@@ -28,7 +28,7 @@ class AutoClick(Thread):
                     event = "<Left>"
                 self.ctrl.pipe("event", event)
                 i += 1
-                time.sleep(0.1)
+                sleep(0.1)
         except PipeWarning as pwa:
             print pwa
 

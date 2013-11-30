@@ -1,7 +1,7 @@
 from Tkconstants import BOTH, LEFT, TOP
 from tkFileDialog import asksaveasfilename
 from Tkinter import Misc
-import traceback
+from traceback import print_exc
 from ttk import Frame, Button
 
 from gui.goban import Goban
@@ -67,7 +67,7 @@ class UI(Frame):
             print "No \"{0}\" command set, ignoring.".format(command)
         except Exception:
             # keep going
-            traceback.print_exc()
+            print_exc()
         self.goban.focus_set()
 
     # DISPLAY METHODS
