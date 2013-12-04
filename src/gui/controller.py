@@ -1,10 +1,9 @@
-from Queue import Queue, Full, Empty
+from Queue import Queue
 from threading import RLock
 from golib_conf import rwidth
 
 from go.rules import Rule
 from go.sgf import Move
-from gui.pipewarning import PipeWarning
 
 
 __author__ = 'Kohistan'
@@ -31,34 +30,6 @@ class ControllerUnsafe(object):
         self.clickloc = None
         self._bind()
 
-    def pipe(self, instruction, args):
-        if self.input.closed:
-            raise PipeWarning("Target User Interface has been closed.")
-        if instruction == "event":
-            # virtual event, comes from self.input itself, neither keyin nor mousein
-            self.input.event_generate(args)
-        else:
-            try:
-                self.queue.put_nowait((instruction, args))
-            except Full:
-                print "Goban instruction queue full, ignoring {0}".format(instruction)
-            self.input.event_generate("<<execute>>")
-
-    def _execute(self, event):
-        """
-        See self.api for the list of executables.
-
-        """
-        try:
-            while True:
-                instruction, args = self.queue.get_nowait()
-                try:
-                    self.api[instruction](*args)
-                except KeyError:
-                    pass  # instruction not implemented here
-        except Empty:
-            pass
-
     def _bind(self):
 
         """
@@ -76,12 +47,9 @@ class ControllerUnsafe(object):
         self.input.keyin.bind("<p>", self.printself)
         self.input.keyin.bind("<Escape>", lambda _: self.display.select(None))
 
-        # commands from background that have to be executed on the GUI thread.
-        self.input.bind("<<execute>>", self._execute)
-
         # dependency injection attempt
         try:
-            self.input.commands["save"] = self.save
+            self.input.commands["save"] = self._save
         except AttributeError:
             print "Some commands could not be bound to User Interface."
 
@@ -110,7 +78,7 @@ class ControllerUnsafe(object):
         lastmove = self.kifu.game.lastmove()
         if lastmove and (self.current_mn < lastmove.number):
             move = self.kifu.game.getmove(self.current_mn + 1).getmove()
-            self._put(move, method=self.incr_move_number)
+            self._put(move, method=self._incr_move_number)
 
     def _put(self, move, method=None, highlight=True):
         allowed, data = self.rules.put(move)
@@ -181,7 +149,7 @@ class ControllerUnsafe(object):
                         self.display.erase(captured)
                         self.clickloc = x_, y_
 
-    def save(self):
+    def _save(self):
         if self.kifu.sgffile is not None:
             self.kifu.save()
         else:
@@ -192,7 +160,7 @@ class ControllerUnsafe(object):
             else:
                 print "Saving cancelled."
 
-    def incr_move_number(self, _):
+    def _incr_move_number(self, _):
         self.current_mn += 1
 
     def printself(self, event):
@@ -200,11 +168,24 @@ class ControllerUnsafe(object):
 
 
 class Controller(ControllerUnsafe):
+    """
+    Place put() and remove() under the same lock. Both need to executed "atomically",
+    but it also seems sensible to force them to be executed sequentially, hence the same lock.
+
+    """
+
+    def __init__(self, kifu, user_input, display):
+        super(Controller, self).__init__(kifu, user_input, display)
+        self.rlock = RLock()
 
     def _put(self, move, method=None, highlight=True):
-        with RLock():
+        """
+        Lock the entire _put method so that another thread cannot cancel changes before they've been confirmed.
+
+        """
+        with self.rlock:
             super(Controller, self)._put(move, method, highlight)
 
     def _remove(self, move, method=None):
-        with RLock():
+        with self.rlock:
             super(Controller, self)._remove(move, method)

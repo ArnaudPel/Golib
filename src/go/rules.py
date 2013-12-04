@@ -12,6 +12,7 @@ made to that state.
 
 """
 
+
 class RuleUnsafe(object):
     """
     This class is not thread safe.
@@ -151,13 +152,21 @@ class RuleUnsafe(object):
 
 
 class Rule(RuleUnsafe):
+    """
+    Place put(), remove() and confirm() under the same lock,to force their sequential execution.
+
+    """
+
+    def __init__(self):
+        super(Rule, self).__init__()
+        self.rlock = RLock()
 
     def put(self, move, reset=True):
-        with RLock():
+        with self.rlock:
             return super(Rule, self).put(move, reset)
 
     def remove(self, move, reset=True):
-        with RLock():
+        with self.rlock:
             return super(Rule, self).remove(move, reset)
 
     def confirm(self):
@@ -166,7 +175,7 @@ class Rule(RuleUnsafe):
         Otherwise another thread can perform an operation, and reset the first operation.
 
         """
-        with RLock():
+        with self.rlock:
             return super(Rule, self).confirm()
 
 
