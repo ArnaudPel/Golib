@@ -41,9 +41,12 @@ class UI(Frame):
         self.pack(fill=BOTH, expand=1)
         self.goban.pack(side=LEFT)
 
-        b_save = Button(self, text="Save", command=self.save)
-        b_pause = Button(self, text="Pause", command=self.pause)
+        b_save = Button(self, text="Save", command=lambda: self.execute("save"))
+        b_pause = Button(self, text="Pause", command=lambda: self.execute("pause"))
+        b_delete = Button(self, text="Delete", command=lambda: self.execute("delete"))
+
         b_pause.pack(side=TOP, padx=5, pady=5)
+        b_delete.pack(side=TOP)
         b_save.pack(side=TOP)
 
         self.goban.focus_set()
@@ -53,12 +56,6 @@ class UI(Frame):
         self.closed = True
         self.goban.closed = True
         Misc.quit(self)
-
-    def save(self):
-        self.execute("save")
-
-    def pause(self):
-        self.execute("pause")
 
     def execute(self, command):
         try:

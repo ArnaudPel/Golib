@@ -1,6 +1,6 @@
 from Queue import Queue
 from threading import RLock
-from golib_conf import rwidth
+from golib_conf import rwidth, gsize
 
 from go.rules import Rule
 from go.sgf import Move
@@ -30,6 +30,8 @@ class ControllerUnsafe(object):
         self.clickloc = None
         self._bind()
 
+        self.selected = None
+
     def _bind(self):
 
         """
@@ -46,10 +48,12 @@ class ControllerUnsafe(object):
         self.input.keyin.bind("<Down>", self._backward)
         self.input.keyin.bind("<p>", self.printself)
         self.input.keyin.bind("<Escape>", lambda _: self.display.select(None))
+        self.input.keyin.bind("<Delete>", self._delete)
 
         # dependency injection attempt
         try:
             self.input.commands["save"] = self._save
+            self.input.commands["delete"] = self._delete
         except AttributeError:
             print "Some commands could not be bound to User Interface."
 
@@ -59,16 +63,15 @@ class ControllerUnsafe(object):
         Internal function to add a move to the kifu and display it. The move
         is expressed via a mouse click.
         """
-        x = event.x / rwidth
-        y = event.y / rwidth
+        x, y = getxy(event)
         self.clickloc = (x, y)
+        self.selected = (x, y)
         self.display.select(Move("Dummy", x, y))
 
     def _mouse_release(self, event):
-        x_ = event.x / rwidth
-        y_ = event.y / rwidth
-        if (x_, y_) == self.clickloc:
-            move = Move(self.kifu.next_color(), x_, y_)
+        x, y = getxy(event)
+        if (x, y) == self.clickloc:
+            move = Move(self.kifu.next_color(), x, y)
             self._put(move, method=self._append)
 
     def _forward(self, event):
@@ -154,11 +157,21 @@ class ControllerUnsafe(object):
             self.kifu.save()
         else:
             sfile = self.display.promptsave()
-            if sfile is not None:
+            if len(sfile):
                 self.kifu.sgffile = sfile
                 self.kifu.save()
             else:
                 print "Saving cancelled."
+
+    def _delete(self, event=None):
+        mv = self.kifu.getmove_at(*self.selected).getmove()
+
+        def delimpl(move):
+            self.kifu.delete(move)
+            self.current_mn -= 1
+            self.selected = None
+
+        self._remove(mv, delimpl)
 
     def _incr_move_number(self, _):
         self.current_mn += 1
@@ -189,3 +202,14 @@ class Controller(ControllerUnsafe):
     def _remove(self, move, method=None):
         with self.rlock:
             super(Controller, self)._remove(move, method)
+
+
+def getxy(click):
+    """
+    Convert the click location into goban coordinates.
+    Return -- the goban's row and column indexes.
+
+    """
+    x = click.x / rwidth
+    y = click.y / rwidth
+    return max(0, min(x, gsize-1)), max(0, min(y, gsize-1))

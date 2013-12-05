@@ -77,6 +77,7 @@ class RuleUnsafe(object):
                     safe = True  # killed at least one enemy
                     for k, l in group:
                         deleted.add(Move(enem_color, k, l))
+                        self.stones_buff[k][l] = 'E'
 
             # check for suicide play if need be
             retval = True, deleted
@@ -107,8 +108,10 @@ class RuleUnsafe(object):
 
         allowed = self.stones_buff[x_][y_] == move.color
         if allowed:
-            data = self.deleted_buff.pop()
             self.stones_buff[x_][y_] = 'E'
+            data = self.deleted_buff.pop()
+            for mv in data:
+                self.stones_buff[mv.x][mv.y] = mv.color
         else:
             data = "Empty" if self.stones_buff[x_][y_] == 'E' else "Wrong Color."
         return allowed, data

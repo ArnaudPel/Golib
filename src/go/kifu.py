@@ -13,6 +13,7 @@ class Kifu:
     self.game -- the GameTree object backing the recording of this kifu.
 
     """
+
     def __init__(self, game, sgffile=None):
         self.game = game
         self.sgffile = sgffile
@@ -43,6 +44,11 @@ class Kifu:
             return 'B'
 
     def relocate(self, origin, dest):
+        node = self.getmove_at(origin.x, origin.y)
+        a, b = dest.getab()
+        node.properties[origin.color] = [a + b]
+
+    def getmove_at(self, x, y):
         """
         Note: this is a naive implementation based on the assumption that the game has no children.
         In other words, that there are not variations at all.
@@ -50,9 +56,29 @@ class Kifu:
         """
         for node in self.game.nodes:
             mv = node.getmove()
-            if mv and mv.x == origin.x and mv.y == origin.y:
-                a, b = dest.getab()
-                node.properties[mv.color] = [a+b]
+            if mv and mv.x == x and mv.y == y:
+                return node
+
+    def delete(self, move):
+        """
+        Note: this is a naive implementation based on the assumption that the game has no children.
+        In other words, that there are not variations at all.
+
+        """
+        decr = False
+        torem = None
+        for node in self.game.nodes:
+            if decr:
+                node.properties["MN"][0] -= 1
+            else:
+                try:
+                    if node.getmove().number == move.number:
+                        decr = True
+                        torem = node
+                except AttributeError:
+                    pass
+        if torem is not None:
+            self.game.nodes.remove(torem)
 
     def save(self):
         if self.sgffile is not None:
@@ -106,7 +132,7 @@ if __name__ == '__main__':
     previous = kifu.game.nodes[-1]
     for i in range(gsize):
         nod = Node(kifu.game, previous)
-        nod.properties[colors[i % 2]] = [chr(i+97)+chr(i+97)]
+        nod.properties[colors[i % 2]] = [chr(i + 97) + chr(i + 97)]
         kifu.game.nodes.append(nod)
         previous = nod
 
