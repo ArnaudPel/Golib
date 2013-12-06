@@ -78,6 +78,10 @@ class RuleUnsafe(object):
                     for k, l in group:
                         deleted.add(Move(enem_color, k, l))
                         self.stones_buff[k][l] = 'E'
+                        try:
+                            enemies.remove((k, l))
+                        except ValueError:
+                            pass
 
             # check for suicide play if need be
             retval = True, deleted
@@ -139,6 +143,9 @@ class RuleUnsafe(object):
                 elif neighcolor == color:
                     self._data(x, y, _group, _libs)
         return _group, len(_libs)
+
+    def __getitem__(self, item):
+        return self.stones.__getitem__(item)
 
     def __repr__(self):
         """

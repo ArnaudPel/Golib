@@ -137,7 +137,7 @@ class GameTree:
         if len(self.nodes):
             idx = self.nodes[0].properties["MN"][0]
             if number < idx:
-                raise IndexError("This game is below move {0} on the main branch.".format(number))
+                raise IndexError("This game is after requested move ({0}) on the main branch.".format(number))
             elif idx + len(self.nodes) < number and len(self):
                 return self[0].getmove(number)
             else:
@@ -209,7 +209,11 @@ class Node:
         self.current_prop_value.append(value)
 
     def my_end_property(self):
-        self.properties[self.current_property] = self.current_prop_value
+        if self.current_property == 'MN':
+            value = [int(self.current_prop_value[0])]
+        else:
+            value = self.current_prop_value
+        self.properties[self.current_property] = value
 
     def my_end_node(self):
         self.number()

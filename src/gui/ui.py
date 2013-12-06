@@ -1,5 +1,5 @@
 from Tkconstants import BOTH, LEFT, TOP
-from tkFileDialog import asksaveasfilename
+from tkFileDialog import asksaveasfilename, askopenfilename
 from Tkinter import Misc
 from traceback import print_exc
 from ttk import Frame, Button
@@ -35,18 +35,21 @@ class UI(Frame):
         self.highlight = self.goban.highlight
         self.select = self.goban.select
         self.erase = self.goban.erase
+        self.clear = self.goban.clear
         self.relocate = self.goban.relocate
 
     def init_ui(self):
         self.pack(fill=BOTH, expand=1)
         self.goban.pack(side=LEFT)
 
-        b_save = Button(self, text="Save", command=lambda: self.execute("save"))
         b_pause = Button(self, text="Pause", command=lambda: self.execute("pause"))
         b_delete = Button(self, text="Delete", command=lambda: self.execute("delete"))
+        b_open = Button(self, text="Open", command=lambda: self.execute("open"))
+        b_save = Button(self, text="Save", command=lambda: self.execute("save"))
 
         b_pause.pack(side=TOP, padx=5, pady=5)
         b_delete.pack(side=TOP)
+        b_open.pack(side=TOP)
         b_save.pack(side=TOP)
 
         self.goban.focus_set()
@@ -69,7 +72,17 @@ class UI(Frame):
 
     # DISPLAY METHODS
 
+    def promptopen(self):
+        return askopenfilename(filetypes=[("Smart Game Format", "sgf")])
+
     def promptsave(self):
-        return asksaveasfilename(defaultextension=".sgf")
+        return asksaveasfilename(defaultextension="sgf")
+
+
+
+
+
+
+
 
 

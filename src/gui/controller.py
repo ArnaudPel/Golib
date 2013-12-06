@@ -1,36 +1,85 @@
-from Queue import Queue
 from threading import RLock
 from golib_conf import rwidth, gsize
 
 from go.rules import Rule
 from go.sgf import Move
+from go.kifu import Kifu
 
 
 __author__ = 'Kohistan'
 
 
-class ControllerUnsafe(object):
+class ControllerBase(object):
     """
-    Class arbitrating the interactions between input and display.
+    Provide Go-related controls only (no GUI).
 
     """
 
-    def __init__(self, kifu, user_input, display):
+    def __init__(self, kifu):
         self.kifu = kifu
         self.rules = Rule()
         self.current_mn = 0
-
-        self.queue = Queue(10)
         self.api = {
             "append": lambda c, x, y: self._put(Move(c, x, y), method=self._append)
         }
 
+    def _put(self, move, method=None):
+        allowed, data = self.rules.put(move)
+        if allowed:
+            if method is not None:
+                method(move)
+            self.rules.confirm()
+            self._stone_put(move, data)
+        else:
+            print data
+
+    def _remove(self, move, method=None):
+        allowed, data = self.rules.remove(move)
+        if allowed:
+            if method is not None:
+                method(move)
+            self.rules.confirm()
+            self._stone_removed(move, data)
+        else:
+            print data
+
+    def _append(self, move):
+        """
+        Append the move to self.kifu if the controller is pointing at the last move.
+        Raise an exception otherwise, as branching (creating a variation inside the game) is not supported yet.
+
+        """
+        last_move = self.kifu.game.lastmove()
+        if not last_move or (self.current_mn == last_move.number):
+            self.kifu.append(move)
+            self.current_mn += 1
+        else:
+            raise NotImplementedError("Cannot create variations for a game yet. Sorry.")
+
+    def _stone_put(self, move, captured):
+        """ Called after a stone has been put to Rule(). Use to update listeners (e.g. GUI). """
+        pass
+
+    def _stone_removed(self, move, freed):
+        """ Called after a stone has been removed from Rule(). Use to update listeners (e.g. GUI). """
+        pass
+
+
+class ControllerUnsafe(ControllerBase):
+    """
+    Class arbitrating the interactions between input and display.
+    Input management is not thread-safe.
+
+    """
+
+    def __init__(self, kifu, user_input, display):
+        super(ControllerUnsafe, self).__init__(kifu)
         self.display = display
         self.input = user_input
         self.clickloc = None
-        self._bind()
-
         self.selected = None
+
+        self._bind()
 
     def _bind(self):
 
@@ -52,6 +101,7 @@ class ControllerUnsafe(object):
 
         # dependency injection attempt
         try:
+            self.input.commands["open"] = self._open
             self.input.commands["save"] = self._save
             self.input.commands["delete"] = self._delete
         except AttributeError:
@@ -83,28 +133,6 @@ class ControllerUnsafe(object):
             move = self.kifu.game.getmove(self.current_mn + 1).getmove()
             self._put(move, method=self._incr_move_number)
 
-    def _put(self, move, method=None, highlight=True):
-        allowed, data = self.rules.put(move)
-        if allowed:
-            if method is not None:
-                # executed method before display and confirm, not to display anything in case of exception
-                method(move)
-            self.rules.confirm()
-            self.display.display(move)
-            if highlight:
-                self.display.highlight(move)
-            self.display.erase(data)
-        else:
-            print data
-
-    def _append(self, move):
-        last_move = self.kifu.game.lastmove()
-        if not last_move or (self.current_mn == last_move.number):
-            self.kifu.append(move)
-            self.current_mn += 1
-        else:
-            raise NotImplementedError("Cannot create variations for a game yet. Sorry.")
-
     def _backward(self, event):
 
         """
@@ -112,26 +140,16 @@ class ControllerUnsafe(object):
         """
         if 0 < self.current_mn:
             move = self.kifu.game.getmove(self.current_mn).getmove()
-            self._remove(move, method=self._prev_highlight)
 
-    def _remove(self, move, method=None):
-        allowed, details = self.rules.remove(move)
-        if allowed:
-            self.rules.confirm()
-            self.display.erase(move)
-            self.display.display(details)  # put previously dead stones back
-            if method is not None:
-                method(move)
-        else:
-            print details
+            def _prev_highlight(_):
+                self.current_mn -= 1
+                if 0 < self.current_mn:
+                    prev_move = self.kifu.game.getmove(self.current_mn).getmove()
+                    self.display.highlight(prev_move)
+                else:
+                    self.display.highlight(None)
 
-    def _prev_highlight(self, _):
-        self.current_mn -= 1
-        if 0 < self.current_mn:
-            prev_move = self.kifu.game.getmove(self.current_mn).getmove()
-            self.display.highlight(prev_move)
-        else:
-            self.display.highlight(None)
+            self._remove(move, method=_prev_highlight)
 
     def _drag(self, event):
         x_ = event.x / rwidth
@@ -152,6 +170,34 @@ class ControllerUnsafe(object):
                         self.display.erase(captured)
                         self.clickloc = x_, y_
 
+    def _delete(self, event=None):
+        mv = self.kifu.getmove_at(*self.selected).getmove()
+
+        def delimpl(move):
+            self.kifu.delete(move)
+            self.current_mn -= 1
+            self.selected = None
+
+        self._remove(mv, delimpl)
+
+    def _stone_put(self, move, captured, highlight=True):
+        self.display.display(move)
+        if highlight:
+            self.display.highlight(move)
+        self.display.erase(captured)
+
+    def _stone_removed(self, move, freed):
+        self.display.erase(move)
+        self.display.display(freed)  # put previously dead stones back
+
+    def _open(self):
+        sfile = self.display.promptopen()
+        if len(sfile):
+            self.display.clear()
+            super(ControllerUnsafe, self).__init__(Kifu.parse(sfile))
+        else:
+            print "Opening cancelled."
+
     def _save(self):
         if self.kifu.sgffile is not None:
             self.kifu.save()
@@ -162,16 +208,6 @@ class ControllerUnsafe(object):
                 self.kifu.save()
             else:
                 print "Saving cancelled."
-
-    def _delete(self, event=None):
-        mv = self.kifu.getmove_at(*self.selected).getmove()
-
-        def delimpl(move):
-            self.kifu.delete(move)
-            self.current_mn -= 1
-            self.selected = None
-
-        self._remove(mv, delimpl)
 
     def _incr_move_number(self, _):
         self.current_mn += 1
@@ -191,13 +227,13 @@ class Controller(ControllerUnsafe):
         super(Controller, self).__init__(kifu, user_input, display)
         self.rlock = RLock()
 
-    def _put(self, move, method=None, highlight=True):
+    def _put(self, move, method=None):
         """
         Lock the entire _put method so that another thread cannot cancel changes before they've been confirmed.
 
         """
         with self.rlock:
-            super(Controller, self)._put(move, method, highlight)
+            super(Controller, self)._put(move, method)
 
     def _remove(self, move, method=None):
         with self.rlock:

@@ -7,7 +7,7 @@ __author__ = 'Kohistan'
 class Goban(Canvas):
     def __init__(self, master):
         Canvas.__init__(self, master, width=gsize * rwidth, height=gsize * rwidth)
-        self.stones = [[None for _ in range(gsize)] for _ in range(gsize)]
+        self.stones = mtx(gsize)
         self.closed = False
         self._draw_board()
 
@@ -60,6 +60,11 @@ class Goban(Canvas):
             self.stones[move.x][move.y].erase()  # clean canvas
             self.stones[move.x][move.y] = None
 
+    def clear(self):
+        self.delete("all")
+        self._draw_board()
+        self.stones = mtx(gsize)
+
     def highlight(self, move, keep=False):
         if not keep:
             # loop is ugly, but no additional structure needed
@@ -76,13 +81,6 @@ class Goban(Canvas):
         except AttributeError:
             pass  # selection cleared
 
-    def __iter__(self):
-        for x in range(gsize):
-            for y in range(gsize):
-                stone = self.stones[x][y]
-                if stone is not None:
-                    yield stone
-
     def relocate(self, origin, destination):
         stone = self.stones[origin.x][origin.y]
         if stone:
@@ -95,6 +93,20 @@ class Goban(Canvas):
         else:
             print "Nothing to relocate."
 
+    def __iter__(self):
+        for x in range(gsize):
+            for y in range(gsize):
+                stone = self.stones[x][y]
+                if stone is not None:
+                    yield stone
+
+
+def mtx(size):
+    """
+    Return a "square matrix" of the given size, made of lists of lists.
+
+    """
+    return [[None for _ in range(size)] for _ in range(size)]
 
 tkcolors = {'B': "black", 'W': "white"}
 tk_inv_colors = {'W': "black", 'B': "white"}
