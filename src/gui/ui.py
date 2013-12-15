@@ -21,7 +21,7 @@ class UI(Frame):
         self.origin = origin
         self.goban = Goban(self)
         self.buttons = Frame(self)
-        self.msg = StringVar(value="Camkifu and a very long sentence well that's about all I can do ATM")
+        self.msg = StringVar(value="Hello")
         self.init_components()
         self.closed = False
 

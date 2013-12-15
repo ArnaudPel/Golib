@@ -8,7 +8,9 @@ __author__ = 'Kohistan'
 class Kifu:
     """
     Utility class simplifying common interactions with the SGF structure.
-    Will become more complicated if variations support is introduced.
+
+    For now it only supports one main line of play: no variations are allowed.
+    This means that an entire game is one single list of nodes.
 
     self.game -- the GameTree object backing the recording of this kifu.
 
@@ -19,11 +21,27 @@ class Kifu:
         self.sgffile = sgffile
 
     def append(self, move):
-        node = Node(self.game, self.game.nodes[-1])
-        r, c = move.getab()
-        node.properties[move.color] = [r + c]  # sgf properties are in a list
-        node.number()
+        node = self._prepare(move)
         self.game.nodes.append(node)
+
+    def insert(self, move, number):
+        node = self._prepare(move)
+        node.number(number)
+
+        idx = None
+        # update subsequent moves number
+        for i in range(len(self.game.nodes)):
+            nd = self.game.nodes[i]
+            try:
+                nb = nd.properties["MN"][0]
+                if number <= nb:
+                    nd.properties["MN"][0] += 1
+                if nb == number:
+                    idx = i
+            except KeyError:
+                pass  # not a move
+        if idx is not None:
+            self.game.nodes.insert(idx, node)
 
     def pop(self):
         self.game.nodes.pop()
@@ -88,6 +106,17 @@ class Kifu:
         else:
             raise SgfWarning("No file defined, can't save.")
 
+    def _prepare(self, move):
+        """
+        Create a new node for the given move.
+
+        """
+        node = Node(self.game, self.game.nodes[-1])
+        r, c = move.getab()
+        node.properties[move.color] = [r + c]  # sgf properties are in a list
+        node.number()
+        return node
+
     def __repr__(self):
         return repr(self.game)
 
@@ -117,13 +146,17 @@ class Kifu:
         Create a Kifu reflecting the given file.
 
         """
-        parser = Parser()
-        f = file(filepath)
-        sgf_string = f.read()
-        f.close()
-        collection = Collection(parser)
-        parser.parse(sgf_string)
-        return Kifu(collection[0])
+        try:
+            with file(filepath) as f:
+                parser = Parser()
+                sgf_string = f.read()
+                f.close()
+                collection = Collection(parser)
+                parser.parse(sgf_string)
+                return Kifu(collection[0])
+        except IOError as ioe:
+            print ioe
+            return Kifu.new()
 
 
 if __name__ == '__main__':

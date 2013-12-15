@@ -57,9 +57,17 @@ class ControllerBase(object):
             self.kifu.append(move)
             self.current_mn += 1
         else:
-            msg = "Cannot create variations for a game yet. Sorry."
-            self.log(msg)
-            raise NotImplementedError(msg)
+            raise NotImplementedError("Variations are not allowed yet.")
+
+    def _insert(self, move):
+        self.current_mn += 1
+        self.kifu.insert(move, self.current_mn)
+
+    def _incr_move_number(self, _):
+        self.current_mn += 1
+
+    def printself(self, _):
+        print self.rules
 
     def _stone_put(self, move, captured):
         """ Called after a stone has been put to Rule(). Use to update listeners (e.g. GUI). """
@@ -88,6 +96,7 @@ class ControllerUnsafe(ControllerBase):
         self.log = self.display.message
 
         self._bind()
+        self.insertmode = False  # todo replace with proper modifier handling if possible
 
     def _bind(self):
 
@@ -99,6 +108,8 @@ class ControllerUnsafe(ControllerBase):
         self.input.mousein.bind("<ButtonRelease-1>", self._mouse_release)
         self.input.mousein.bind("<Button-2>", self._backward)
 
+        self.input.keyin.bind("<i>", lambda _: self._setinsert(True))
+        self.input.keyin.bind("<KeyRelease-i>", lambda _: self._setinsert(False))
         self.input.keyin.bind("<Right>", self._forward)
         self.input.keyin.bind("<Up>", self._forward)
         self.input.keyin.bind("<Left>", self._backward)
@@ -130,9 +141,16 @@ class ControllerUnsafe(ControllerBase):
         x, y = getxy(event)
         if (x, y) == self.clickloc:
             move = Move(self.kifu.next_color(), x, y)
-            self._put(move, method=self._append)
+            if self.insertmode:
+                self._put(move, method=self._insert)
+            else:
+                try:
+                    self._put(move, method=self._append)
+                except NotImplementedError as nie:
+                    print nie
+                    self.log("Please hold 'i' and click to insert a move")
 
-    def _forward(self, event):
+    def _forward(self, _):
         """
         Internal function to display the next kifu stone on the goban.
         """
@@ -141,7 +159,7 @@ class ControllerUnsafe(ControllerBase):
             move = self.kifu.game.getmove(self.current_mn + 1).getmove()
             self._put(move, method=self._incr_move_number)
 
-    def _backward(self, event):
+    def _backward(self, _):
 
         """
         Internal function to undo the last move made on the goban.
@@ -178,7 +196,7 @@ class ControllerUnsafe(ControllerBase):
                         self.display.erase(captured)
                         self.clickloc = x_, y_
 
-    def _delete(self, event=None):
+    def _delete(self, _):
         mv = self.kifu.getmove_at(*self.selected).getmove()
 
         def delimpl(move):
@@ -219,11 +237,10 @@ class ControllerUnsafe(ControllerBase):
             else:
                 self.log("Saving cancelled")
 
-    def _incr_move_number(self, _):
-        self.current_mn += 1
-
-    def printself(self, event):
-        print self.rules
+    def _setinsert(self, insert):
+        if self.insertmode != insert:
+            self.insertmode = insert
+            self.log("Insert Mode {0}".format("On" if self.insertmode else "Off"))
 
 
 class Controller(ControllerUnsafe):
@@ -258,4 +275,4 @@ def getxy(click):
     """
     x = click.x / rwidth
     y = click.y / rwidth
-    return max(0, min(x, gsize-1)), max(0, min(y, gsize-1))
+    return max(0, min(x, gsize - 1)), max(0, min(y, gsize - 1))

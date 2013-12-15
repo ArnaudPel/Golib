@@ -219,13 +219,18 @@ class Node:
         self.number()
         self.parent.setup()
 
-    def number(self):
+    def number(self, nb=None):
         """
         A.P.
         Set the move number property (MN) if not already there.
 
         """
-        if "MN" not in self.properties.keys():
+        # if number provided, force update
+        if nb is not None:
+            self.properties["MN"] = [nb]
+
+        # else create number only if it is missing
+        elif "MN" not in self.properties.keys():
             number = 0
             try:
                 number = self.previous.properties["MN"][0]
