@@ -19,7 +19,9 @@ class UI(Frame):
     def __init__(self, master):
         Frame.__init__(self, master)
         self.goban = Goban(self)
-        self.init_ui()
+        self.init_components()
+        self.goban.focus_set()
+        self.goban.bind("<q>", self.close)  # dev utility mostly, will probably have to be removed
         self.closed = False
 
         # user input part of the gui, delegated to goban ATM. may become lists later
@@ -38,22 +40,17 @@ class UI(Frame):
         self.clear = self.goban.clear
         self.relocate = self.goban.relocate
 
-    def init_ui(self):
+    def init_components(self):
         self.pack(fill=BOTH, expand=1)
         self.goban.pack(side=LEFT)
 
-        b_pause = Button(self, text="Pause", command=lambda: self.execute("pause"))
         b_delete = Button(self, text="Delete", command=lambda: self.execute("delete"))
         b_open = Button(self, text="Open", command=lambda: self.execute("open"))
         b_save = Button(self, text="Save", command=lambda: self.execute("save"))
 
-        b_pause.pack(side=TOP, padx=5, pady=5)
         b_delete.pack(side=TOP)
         b_open.pack(side=TOP)
         b_save.pack(side=TOP)
-
-        self.goban.focus_set()
-        self.goban.bind("<q>", self.close)  # dev utility mostly, will probably have to be removed
 
     def close(self, _):
         self.closed = True

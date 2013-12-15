@@ -1,4 +1,5 @@
 from Tkinter import Tk
+from sys import argv
 from go.kifu import Kifu
 from gui.controller import Controller
 from gui.ui import UI
@@ -12,8 +13,11 @@ Application entry point.
 
 if __name__ == '__main__':
     root = Tk()
-    #kifu = Kifu.parse("/Users/Kohistan/Documents/go/Perso Games/MrYamamoto-Kohistan.sgf")
-    kifu = Kifu.new()
+
+    if 1 < len(argv):
+        kifu = Kifu.parse(argv[1])
+    else:
+        kifu = Kifu.new()
 
     app = UI(root)
     control = Controller(kifu, app, app)

@@ -25,6 +25,9 @@ class RuleUnsafe(object):
         self.deleted = []
         self.reset()  # initialize buffers
 
+    def copystones(self):
+        return [list(self.stones[row]) for row in range(gsize)]
+
     def confirm(self):
         """
         Persist the state of the last check, either next() or previous()
@@ -38,7 +41,7 @@ class RuleUnsafe(object):
 
     def reset(self):
         """ Clear any unconfirmed data. """
-        self.stones_buff = [list(self.stones[row]) for row in range(gsize)]
+        self.stones_buff = self.copystones()
         self.deleted_buff = list(self.deleted)
 
     def put(self, move, reset=True):
@@ -54,6 +57,13 @@ class RuleUnsafe(object):
         """
         if reset:
             self.reset()
+
+        # check for ko rule
+        if len(self.deleted):
+            lastdel = self.deleted[-1]
+            if (len(lastdel) == 1) and (move == iter(lastdel).next()):
+                return False, "Ko"
+
         x_ = move.x
         y_ = move.y
         color = move.color

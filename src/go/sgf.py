@@ -317,6 +317,9 @@ class Move(object):
     def copy(self):
         return Move(self.color, self.x, self.y, self.number)
 
+    def __eq__(self, o):
+        return self.color == o.color and self.x == o.x and self.y == o.y
+
     def __repr__(self):
         # chr coordinates
         #return "{0}[{1}{2}]".format(self.color, *self.getab())

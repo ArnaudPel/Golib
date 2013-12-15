@@ -36,10 +36,10 @@ class ControllerBase(object):
     def _remove(self, move, method=None):
         allowed, data = self.rules.remove(move)
         if allowed:
-            if method is not None:
-                method(move)
             self.rules.confirm()
             self._stone_removed(move, data)
+            if method is not None:
+                method(move)
         else:
             print data
 
