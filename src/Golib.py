@@ -20,5 +20,6 @@ if __name__ == '__main__':
         kifu = Kifu.new()
 
     app = UI(root)
+    app.pack()
     control = Controller(kifu, app, app)
     root.mainloop()

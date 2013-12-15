@@ -1,3 +1,4 @@
+from sys import stdout
 from threading import RLock
 from golib_conf import rwidth, gsize
 
@@ -22,6 +23,8 @@ class ControllerBase(object):
         self.api = {
             "append": lambda c, x, y: self._put(Move(c, x, y), method=self._append)
         }
+        # temporary log implementation that will changed for a more decent pattern
+        self.log = lambda msg: stdout.write(str(msg) + "\n")
 
     def _put(self, move, method=None):
         allowed, data = self.rules.put(move)
@@ -31,7 +34,7 @@ class ControllerBase(object):
             self.rules.confirm()
             self._stone_put(move, data)
         else:
-            print data
+            self.log(data)
 
     def _remove(self, move, method=None):
         allowed, data = self.rules.remove(move)
@@ -41,7 +44,7 @@ class ControllerBase(object):
             if method is not None:
                 method(move)
         else:
-            print data
+            self.log(data)
 
     def _append(self, move):
         """
@@ -54,7 +57,9 @@ class ControllerBase(object):
             self.kifu.append(move)
             self.current_mn += 1
         else:
-            raise NotImplementedError("Cannot create variations for a game yet. Sorry.")
+            msg = "Cannot create variations for a game yet. Sorry."
+            self.log(msg)
+            raise NotImplementedError(msg)
 
     def _stone_put(self, move, captured):
         """ Called after a stone has been put to Rule(). Use to update listeners (e.g. GUI). """
@@ -78,6 +83,9 @@ class ControllerUnsafe(ControllerBase):
         self.input = user_input
         self.clickloc = None
         self.selected = None
+
+        # temporary log implementation that will changed for a more decent pattern
+        self.log = self.display.message
 
         self._bind()
 
@@ -194,9 +202,11 @@ class ControllerUnsafe(ControllerBase):
         sfile = self.display.promptopen()
         if len(sfile):
             self.display.clear()
-            super(ControllerUnsafe, self).__init__(Kifu.parse(sfile))
+            self.kifu = (Kifu.parse(sfile))
+            self.rules = Rule()
+            self.current_mn = 0
         else:
-            print "Opening cancelled."
+            self.log("Opening cancelled")
 
     def _save(self):
         if self.kifu.sgffile is not None:
@@ -207,7 +217,7 @@ class ControllerUnsafe(ControllerBase):
                 self.kifu.sgffile = sfile
                 self.kifu.save()
             else:
-                print "Saving cancelled."
+                self.log("Saving cancelled")
 
     def _incr_move_number(self, _):
         self.current_mn += 1

@@ -16,7 +16,6 @@ class Goban(Canvas):
         Draw an empty goban.
 
         """
-        self.pack()
         self.configure(background="#F0CAA7")
         # vertical lines
         offset = rwidth / 2
