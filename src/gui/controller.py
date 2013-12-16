@@ -66,6 +66,7 @@ class ControllerBase(object):
 
     def _incr_move_number(self, _):
         self.current_mn += 1
+        self.log("Move {0}".format(self.current_mn))
 
     def printself(self, _):
         print self.rules
@@ -136,8 +137,9 @@ class ControllerUnsafe(ControllerBase):
             self.log("Ready to insert {0} stone as move {1}".format(color, self.current_mn))
 
     def _keyrelease(self, _):
+        if self.keydown in ('b', 'w'):
+            self.log("Move {0}".format(self.current_mn))
         self.keydown = None
-        self.log("-")
 
     def _click(self, event):
 
@@ -188,6 +190,7 @@ class ControllerUnsafe(ControllerBase):
                     self.display.highlight(prev_move)
                 else:
                     self.display.highlight(None)
+                self.log("Move {0}".format(self.current_mn))
 
             self._remove(move, method=_prev_highlight)
 

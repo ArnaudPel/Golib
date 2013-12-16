@@ -1,4 +1,5 @@
 from Tkinter import Tk
+import argparse
 from sys import argv
 from gui.controller import Controller
 from gui.ui import UI
@@ -10,10 +11,17 @@ Application entry point.
 
 """
 
+
+def get_argparser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--sgf", help="SGF file to load at startup.")
+    return parser
+
 if __name__ == '__main__':
     root = Tk()
     app = UI(root)
     app.pack()
-    sgf = argv[1] if 1 < len(argv) else None
-    control = Controller(app, app, kifufile=sgf)
+
+    args = get_argparser().parse_args()
+    control = Controller(app, app, kifufile=args.sgf)
     root.mainloop()
