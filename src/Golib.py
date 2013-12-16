@@ -1,6 +1,5 @@
 from Tkinter import Tk
 from sys import argv
-from go.kifu import Kifu
 from gui.controller import Controller
 from gui.ui import UI
 
@@ -13,13 +12,8 @@ Application entry point.
 
 if __name__ == '__main__':
     root = Tk()
-
-    if 1 < len(argv):
-        kifu = Kifu.parse(argv[1])
-    else:
-        kifu = Kifu.new()
-
     app = UI(root)
     app.pack()
-    control = Controller(kifu, app, app)
+    sgf = argv[1] if 1 < len(argv) else None
+    control = Controller(app, app, kifufile=sgf)
     root.mainloop()

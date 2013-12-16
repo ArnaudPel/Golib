@@ -1,8 +1,9 @@
-from Tkconstants import BOTH, LEFT, TOP, N
+from Tkconstants import N
 from tkFileDialog import asksaveasfilename, askopenfilename
 from Tkinter import Misc, StringVar, Label
 from traceback import print_exc
 from ttk import Frame, Button
+from golib_conf import appname
 
 from gui.goban import Goban
 
@@ -31,6 +32,7 @@ class UI(Frame):
 
         # these are expected to be set from outside, in an attempt to inject dependency via setter
         self.commands = {}
+        self.goban.bind("<q>", self.close)  # dev utility mostly, will probably have to be removed
 
         # delegate some work to goban
         # todo make that a bit more generic, using registration or something
@@ -42,11 +44,16 @@ class UI(Frame):
         self.relocate = self.goban.relocate
 
     def init_components(self):
+        """
+        Note on layout managers: pack() and grid() don't mix well (at all) in the same container,
+        or a global freeze is likely to happen.
+        This is why no layout manager is called on self, and is left to creator to decide.
+
+        """
+        self.title(appname)
         roff = self.origin[0]
         coff = self.origin[1]
         self.goban.grid(row=roff, column=coff)
-        self.goban.focus_set()
-        self.goban.bind("<q>", self.close)  # dev utility mostly, will probably have to be removed
         self.buttons.grid(row=roff, column=coff+1, sticky=N, pady=10)
 
         b_delete = Button(self.buttons, text="Delete", command=lambda: self.execute("delete"))
@@ -58,6 +65,8 @@ class UI(Frame):
         b_open.grid(row=1, column=0)
         b_save.grid(row=2, column=0)
         msglabel.grid(row=1, column=0)
+
+        self.goban.focus_set()
 
     def close(self, _):
         self.closed = True
@@ -83,6 +92,10 @@ class UI(Frame):
 
     def promptsave(self):
         return asksaveasfilename(defaultextension="sgf")
+
+    def title(self, title):
+        # some more duck typing
+        self.master.title(title)
 
 
 

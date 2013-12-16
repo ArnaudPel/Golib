@@ -1,3 +1,4 @@
+from sys import stdout
 from golib_conf import gsize
 from go.sgf import Collection, GameTree, Node, Parser
 from go.sgfwarning import SgfWarning
@@ -42,6 +43,8 @@ class Kifu:
                 pass  # not a move
         if idx is not None:
             self.game.nodes.insert(idx, node)
+        elif i == number - 1:
+            self.game.nodes.append(node)
 
     def pop(self):
         self.game.nodes.pop()
@@ -141,21 +144,27 @@ class Kifu:
         return Kifu(game)
 
     @staticmethod
-    def parse(filepath):
+    def parse(filepath, log=None):
         """
         Create a Kifu reflecting the given file.
 
         """
-        try:
-            with file(filepath) as f:
-                parser = Parser()
-                sgf_string = f.read()
-                f.close()
-                collection = Collection(parser)
-                parser.parse(sgf_string)
-                return Kifu(collection[0])
-        except IOError as ioe:
-            print ioe
+        if log is None:
+            log = lambda msg: stdout.write(str(msg) + "\n")
+        if filepath is not None:
+            try:
+                with file(filepath) as f:
+                    parser = Parser()
+                    sgf_string = f.read()
+                    f.close()
+                    collection = Collection(parser)
+                    parser.parse(sgf_string)
+                    log("Opened '{0}'".format(filepath))
+                    return Kifu(collection[0])
+            except IOError as ioe:
+                log(ioe)
+                return Kifu.new()
+        else:
             return Kifu.new()
 
 

@@ -14,3 +14,6 @@ screenw = 1920
 
 # height of the screen, pixels
 screenh = 1200
+
+# display name of the application
+appname = "Golib"

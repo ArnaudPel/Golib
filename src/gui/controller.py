@@ -1,6 +1,7 @@
 from sys import stdout
+from ntpath import basename
 from threading import RLock
-from golib_conf import rwidth, gsize
+from golib_conf import rwidth, gsize, appname
 
 from go.rules import Rule
 from go.sgf import Move
@@ -16,15 +17,15 @@ class ControllerBase(object):
 
     """
 
-    def __init__(self, kifu):
-        self.kifu = kifu
+    def __init__(self, kifufile=None):
+        # temporary log implementation that will changed for a more decent pattern
+        self.log = lambda msg: stdout.write(str(msg) + "\n")
+        self.kifu = Kifu.parse(kifufile, log=self.log)
         self.rules = Rule()
         self.current_mn = 0
         self.api = {
             "append": lambda c, x, y: self._put(Move(c, x, y), method=self._append)
         }
-        # temporary log implementation that will changed for a more decent pattern
-        self.log = lambda msg: stdout.write(str(msg) + "\n")
 
     def _put(self, move, method=None):
         allowed, data = self.rules.put(move)
@@ -85,8 +86,8 @@ class ControllerUnsafe(ControllerBase):
 
     """
 
-    def __init__(self, kifu, user_input, display):
-        super(ControllerUnsafe, self).__init__(kifu)
+    def __init__(self, user_input, display, kifufile=None):
+        super(ControllerUnsafe, self).__init__(None)  # use our own kifu loading
         self.display = display
         self.input = user_input
         self.clickloc = None
@@ -96,7 +97,9 @@ class ControllerUnsafe(ControllerBase):
         self.log = self.display.message
 
         self._bind()
-        self.insertmode = False  # todo replace with proper modifier handling if possible
+        self.keydown = None
+
+        self.loadkifu(kifufile)
 
     def _bind(self):
 
@@ -108,8 +111,8 @@ class ControllerUnsafe(ControllerBase):
         self.input.mousein.bind("<ButtonRelease-1>", self._mouse_release)
         self.input.mousein.bind("<Button-2>", self._backward)
 
-        self.input.keyin.bind("<i>", lambda _: self._setinsert(True))
-        self.input.keyin.bind("<KeyRelease-i>", lambda _: self._setinsert(False))
+        self.input.keyin.bind("<Key>", self._keypress)
+        self.input.keyin.bind("<KeyRelease>", self._keyrelease)
         self.input.keyin.bind("<Right>", self._forward)
         self.input.keyin.bind("<Up>", self._forward)
         self.input.keyin.bind("<Left>", self._backward)
@@ -126,6 +129,16 @@ class ControllerUnsafe(ControllerBase):
         except AttributeError:
             print "Some commands could not be bound to User Interface."
 
+    def _keypress(self, event):
+        self.keydown = event.char
+        if self.keydown in ('b', 'w'):
+            color = "black" if self.keydown == 'b' else "white"
+            self.log("Ready to insert {0} stone as move {1}".format(color, self.current_mn))
+
+    def _keyrelease(self, _):
+        self.keydown = None
+        self.log("-")
+
     def _click(self, event):
 
         """
@@ -141,14 +154,15 @@ class ControllerUnsafe(ControllerBase):
         x, y = getxy(event)
         if (x, y) == self.clickloc:
             move = Move(self.kifu.next_color(), x, y)
-            if self.insertmode:
+            if self.keydown in ('b', 'w'):
+                move.color = self.keydown.upper()
                 self._put(move, method=self._insert)
             else:
                 try:
                     self._put(move, method=self._append)
                 except NotImplementedError as nie:
                     print nie
-                    self.log("Please hold 'i' and click to insert a move")
+                    self.log("Please hold 'b' or 'w' and click to insert a move")
 
     def _forward(self, _):
         """
@@ -219,12 +233,18 @@ class ControllerUnsafe(ControllerBase):
     def _open(self):
         sfile = self.display.promptopen()
         if len(sfile):
+            self.loadkifu(sfile)
             self.display.clear()
-            self.kifu = (Kifu.parse(sfile))
             self.rules = Rule()
             self.current_mn = 0
         else:
             self.log("Opening cancelled")
+
+    def loadkifu(self, sfile):
+        self.kifu = Kifu.parse(sfile, log=self.log)
+        if sfile is None:
+            sfile = "New game"
+        self.display.title("{0} - {1}".format(appname, basename(sfile)))
 
     def _save(self):
         if self.kifu.sgffile is not None:
@@ -237,11 +257,6 @@ class ControllerUnsafe(ControllerBase):
             else:
                 self.log("Saving cancelled")
 
-    def _setinsert(self, insert):
-        if self.insertmode != insert:
-            self.insertmode = insert
-            self.log("Insert Mode {0}".format("On" if self.insertmode else "Off"))
-
 
 class Controller(ControllerUnsafe):
     """
@@ -250,8 +265,8 @@ class Controller(ControllerUnsafe):
 
     """
 
-    def __init__(self, kifu, user_input, display):
-        super(Controller, self).__init__(kifu, user_input, display)
+    def __init__(self, user_input, display, kifufile=None):
+        super(Controller, self).__init__(user_input, display, kifufile)
         self.rlock = RLock()
 
     def _put(self, move, method=None):
