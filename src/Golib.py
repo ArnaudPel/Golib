@@ -1,6 +1,7 @@
 from Tkinter import Tk
 import argparse
-from sys import argv
+import os
+import platform
 from gui.controller import Controller
 from gui.ui import UI
 
@@ -17,6 +18,20 @@ def get_argparser():
     parser.add_argument("--sgf", help="SGF file to load at startup.")
     return parser
 
+
+def center(win):
+    """
+    From stackoverflow, used to center app on screen
+
+    """
+    win.update_idletasks()
+    width = win.winfo_width()
+    height = win.winfo_height()
+    x = (win.winfo_screenwidth() / 2) - (width / 2)
+    y = (win.winfo_screenheight() / 2) - (height / 2)
+    win.geometry('{0}x{1}+{2}+{3}'.format(width, height, x, y))
+
+
 if __name__ == '__main__':
     root = Tk()
     app = UI(root)
@@ -24,4 +39,10 @@ if __name__ == '__main__':
 
     args = get_argparser().parse_args()
     control = Controller(app, app, kifufile=args.sgf)
+
+    # mac OS special, to bring app to front at startup
+    if "Darwin" in platform.system():
+        os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "Python" to true' ''')
+
+    center(root)
     root.mainloop()

@@ -1,6 +1,6 @@
 from Tkconstants import N
 from tkFileDialog import asksaveasfilename, askopenfilename
-from Tkinter import Misc, StringVar, Label
+from Tkinter import Misc, StringVar, Label, Menu
 from traceback import print_exc
 from ttk import Frame, Button
 from golib_conf import appname
@@ -23,7 +23,9 @@ class UI(Frame):
         self.goban = Goban(self)
         self.buttons = Frame(self)
         self.msg = StringVar(value="Hello")
+        self.create_menubar()
         self.init_components()
+
         self.closed = False
 
         # user input part of the gui, delegated to goban ATM. may become lists later
@@ -45,6 +47,7 @@ class UI(Frame):
 
     def init_components(self):
         """
+        Called during __init__(). Can be extended, don't forget super() call.
         Note on layout managers: pack() and grid() don't mix well (at all) in the same container,
         or a global freeze is likely to happen.
         This is why no layout manager is called on self, and is left to creator to decide.
@@ -67,6 +70,16 @@ class UI(Frame):
         msglabel.grid(row=1, column=0)
 
         self.goban.focus_set()
+
+    def create_menubar(self):
+        self.menubar = Menu(self._root())
+
+        # mac OS goody  todo what does it do on Linux or Windows ?
+        m_help = Menu(self.menubar, name='help')
+        self.menubar.add_cascade(label="Help", menu=m_help)
+
+        # display the menu
+        self._root().config(menu=self.menubar)
 
     def close(self, _):
         self.closed = True
@@ -94,8 +107,7 @@ class UI(Frame):
         return asksaveasfilename(defaultextension="sgf")
 
     def title(self, title):
-        # some more duck typing
-        self.master.title(title)
+        self._root().title(title)
 
 
 
