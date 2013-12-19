@@ -1,6 +1,7 @@
 from Tkconstants import N
 from tkFileDialog import asksaveasfilename, askopenfilename
 from Tkinter import Misc, StringVar, Label, Menu
+from tkSimpleDialog import askstring
 from traceback import print_exc
 from ttk import Frame, Button
 from golib_conf import appname
@@ -62,11 +63,25 @@ class UI(Frame):
         b_delete = Button(self.buttons, text="Delete", command=lambda: self.execute("delete"))
         b_open = Button(self.buttons, text="Open", command=lambda: self.execute("open"))
         b_save = Button(self.buttons, text="Save", command=lambda: self.execute("save"))
+
+        b_back = Button(self.buttons, text="<", command=lambda: self.execute("back"))
+        b_forward = Button(self.buttons, text=">", command=lambda: self.execute("forward"))
+        b_beqinning = Button(self.buttons, text="<<", command=lambda: self.execute("beginning"))
+        b_end = Button(self.buttons, text=">>", command=lambda: self.execute("end"))
+
         msglabel = Label(self, textvariable=self.msg)
 
-        b_delete.grid(row=0, column=0)
+        # position buttons on the buttons grid
+        b_delete.grid(row=0, column=0, columnspan=2)
         b_open.grid(row=1, column=0)
-        b_save.grid(row=2, column=0)
+        b_save.grid(row=1, column=1)
+
+        b_back.grid(row=2, column=0)
+        b_forward.grid(row=2, column=1)
+        b_beqinning.grid(row=3, column=0)
+        b_end.grid(row=3, column=1)
+
+        # position things on the main GUI grid
         msglabel.grid(row=1, column=0)
 
         self.goban.focus_set()
@@ -105,6 +120,11 @@ class UI(Frame):
 
     def promptsave(self):
         return asksaveasfilename(defaultextension="sgf")
+
+    def promptgoto(self):
+        number = askstring("Jump", "Goto move")
+        self.goban.focus_set()
+        return number
 
     def title(self, title):
         self._root().title(title)

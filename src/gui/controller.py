@@ -119,6 +119,7 @@ class ControllerUnsafe(ControllerBase):
         self.input.keyin.bind("<Left>", self._backward)
         self.input.keyin.bind("<Down>", self._backward)
         self.input.keyin.bind("<p>", self.printself)
+        self.input.keyin.bind("<g>", self.prompt_goto)
         self.input.keyin.bind("<Escape>", lambda _: self.display.select(None))
         self.input.keyin.bind("<Delete>", self._delete)
 
@@ -127,6 +128,10 @@ class ControllerUnsafe(ControllerBase):
             self.input.commands["open"] = self._open
             self.input.commands["save"] = self._save
             self.input.commands["delete"] = self._delete
+            self.input.commands["back"] = self._backward
+            self.input.commands["forward"] = self._forward
+            self.input.commands["beginning"] = lambda: self._goto(0)
+            self.input.commands["end"] = lambda: self._goto(500)
         except AttributeError:
             print "Some commands could not be bound to User Interface."
 
@@ -166,16 +171,20 @@ class ControllerUnsafe(ControllerBase):
                     print nie
                     self.log("Please hold 'b' or 'w' and click to insert a move")
 
-    def _forward(self, _):
+    def _forward(self, event=None, checked=None):
         """
         Internal function to display the next kifu stone on the goban.
+
+        check -- allow for bound checking to have happened outside.
         """
-        lastmove = self.kifu.game.lastmove()
-        if lastmove and (self.current_mn < lastmove.number):
+        if checked is None:
+            lastmove = self.kifu.game.lastmove()
+            checked = lastmove and (self.current_mn < lastmove.number)
+        if checked:
             move = self.kifu.game.getmove(self.current_mn + 1).getmove()
             self._put(move, method=self._incr_move_number)
 
-    def _backward(self, _):
+    def _backward(self, event=None):
 
         """
         Internal function to undo the last move made on the goban.
@@ -257,8 +266,26 @@ class ControllerUnsafe(ControllerBase):
             if len(sfile):
                 self.kifu.sgffile = sfile
                 self.kifu.save()
+                self.display.title("{0} - {1}".format(appname, basename(sfile)))
             else:
                 self.log("Saving cancelled")
+
+    def _goto(self, move_nr):
+        """
+        Update display and state to reach the specified move number.
+
+        """
+        lastmove = self.kifu.game.lastmove()
+        if lastmove is not None:
+            bound = max(0, min(move_nr, lastmove.number))
+            while self.current_mn < bound:
+                self._forward(checked=True)
+            while bound < self.current_mn:
+                self._backward(None)
+
+    def prompt_goto(self, _):
+        number = int(self.display.promptgoto())
+        self._goto(number)
 
 
 class Controller(ControllerUnsafe):
