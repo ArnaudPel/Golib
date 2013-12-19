@@ -1,7 +1,7 @@
 from Tkconstants import N
 from tkFileDialog import asksaveasfilename, askopenfilename
 from Tkinter import Misc, StringVar, Label, Menu
-from tkSimpleDialog import askstring
+from tkSimpleDialog import askstring, askinteger
 from traceback import print_exc
 from ttk import Frame, Button
 from golib_conf import appname
@@ -122,7 +122,7 @@ class UI(Frame):
         return asksaveasfilename(defaultextension="sgf")
 
     def promptgoto(self):
-        number = askstring("Jump", "Goto move")
+        number = askinteger("Jump", "Goto move")
         self.goban.focus_set()
         return number
 

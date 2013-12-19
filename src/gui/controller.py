@@ -53,8 +53,7 @@ class ControllerBase(object):
         Raise an exception otherwise, as branching (creating a variation inside the game) is not supported yet.
 
         """
-        last_move = self.kifu.game.lastmove()
-        if not last_move or (self.current_mn == last_move.number):
+        if self.at_last_move():
             self.kifu.append(move)
             self.current_mn += 1
         else:
@@ -78,6 +77,10 @@ class ControllerBase(object):
     def _stone_removed(self, move, freed):
         """ Called after a stone has been removed from Rule(). Use to update listeners (e.g. GUI). """
         pass
+
+    def at_last_move(self):
+        last_move = self.kifu.game.lastmove()
+        return not last_move or (self.current_mn == last_move.number)
 
 
 class ControllerUnsafe(ControllerBase):
@@ -119,7 +122,7 @@ class ControllerUnsafe(ControllerBase):
         self.input.keyin.bind("<Left>", self._backward)
         self.input.keyin.bind("<Down>", self._backward)
         self.input.keyin.bind("<p>", self.printself)
-        self.input.keyin.bind("<g>", self.prompt_goto)
+        self.input.keyin.bind("<g>", lambda _: self._goto(self.display.promptgoto()))
         self.input.keyin.bind("<Escape>", lambda _: self.display.select(None))
         self.input.keyin.bind("<Delete>", self._delete)
 
@@ -131,7 +134,7 @@ class ControllerUnsafe(ControllerBase):
             self.input.commands["back"] = self._backward
             self.input.commands["forward"] = self._forward
             self.input.commands["beginning"] = lambda: self._goto(0)
-            self.input.commands["end"] = lambda: self._goto(500)
+            self.input.commands["end"] = lambda: self._goto(722)  # big overkill for any sane game
         except AttributeError:
             print "Some commands could not be bound to User Interface."
 
@@ -178,8 +181,7 @@ class ControllerUnsafe(ControllerBase):
         check -- allow for bound checking to have happened outside.
         """
         if checked is None:
-            lastmove = self.kifu.game.lastmove()
-            checked = lastmove and (self.current_mn < lastmove.number)
+            checked = not self.at_last_move()
         if checked:
             move = self.kifu.game.getmove(self.current_mn + 1).getmove()
             self._put(move, method=self._incr_move_number)
@@ -282,10 +284,6 @@ class ControllerUnsafe(ControllerBase):
                 self._forward(checked=True)
             while bound < self.current_mn:
                 self._backward(None)
-
-    def prompt_goto(self, _):
-        number = int(self.display.promptgoto())
-        self._goto(number)
 
 
 class Controller(ControllerUnsafe):
