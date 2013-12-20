@@ -184,7 +184,11 @@ class ControllerUnsafe(ControllerBase):
             checked = not self.at_last_move()
         if checked:
             move = self.kifu.game.getmove(self.current_mn + 1).getmove()
-            self._put(move, method=self._incr_move_number)
+            if move.getab() == ('-', '-'):
+                self.log("{0} pass".format(move.color))
+                self.current_mn += 1
+            else:
+                self._put(move, method=self._incr_move_number)
 
     def _backward(self, event=None):
 
@@ -192,18 +196,23 @@ class ControllerUnsafe(ControllerBase):
         Internal function to undo the last move made on the goban.
         """
         if 0 < self.current_mn:
-            move = self.kifu.game.getmove(self.current_mn).getmove()
-
             def _prev_highlight(_):
                 self.current_mn -= 1
                 if 0 < self.current_mn:
                     prev_move = self.kifu.game.getmove(self.current_mn).getmove()
-                    self.display.highlight(prev_move)
+                    if prev_move.getab() == ('-', '-'):
+                        self.display.highlight(None)
+                    else:
+                        self.display.highlight(prev_move)
                 else:
                     self.display.highlight(None)
                 self.log("Move {0}".format(self.current_mn))
 
-            self._remove(move, method=_prev_highlight)
+            move = self.kifu.game.getmove(self.current_mn).getmove()
+            if move.getab() == ('-','-'):
+                _prev_highlight(_)
+            else:
+                self._remove(move, method=_prev_highlight)
 
     def _drag(self, event):
         x_ = event.x / rwidth

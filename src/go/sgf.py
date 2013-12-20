@@ -262,24 +262,30 @@ class Node:
         Returns a Move object, or null if this node has no move property.
 
         """
-        number = None
+        number = -1
         try:
             number = self.properties["MN"][0]
         except KeyError:
             pass
 
-        move = None
+        color = 'B'
+        pos = None
         try:
-            move = Move('B', *self.properties['B'][0], number=number)
+            pos = self.properties[color][0]
         except KeyError:
             try:
-                move = Move('W', *self.properties['W'][0], number=number)
+                color = 'W'
+                pos = self.properties[color][0]
             except KeyError:
                 keys = self.properties.keys()
                 if 'AW' in keys or 'BW' in keys or 'EW' in keys:
                     raise SgfWarning("Setup properties detected (not currently supported). "
                                      "The game may not be rendered correctly. Move:" + str(number))
-        return move
+        if pos is not None:
+            if len(pos) == 0:
+                pos = '--'  # the player has passed
+            return Move(color, *pos, number=number)
+        return None
 
     def __repr__(self):
         """
