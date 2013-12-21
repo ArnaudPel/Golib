@@ -1,5 +1,5 @@
 from sys import stdout
-from ntpath import basename
+from ntpath import basename, dirname
 from threading import RLock
 from golib_conf import rwidth, gsize, appname
 
@@ -79,7 +79,7 @@ class ControllerBase(object):
         pass
 
     def at_last_move(self):
-        last_move = self.kifu.game.lastmove()
+        last_move = self.kifu.lastmove()
         return not last_move or (self.current_mn == last_move.number)
 
 
@@ -183,7 +183,7 @@ class ControllerUnsafe(ControllerBase):
         if checked is None:
             checked = not self.at_last_move()
         if checked:
-            move = self.kifu.game.getmove(self.current_mn + 1).getmove()
+            move = self.kifu.getmove_at(self.current_mn + 1)
             if move.getab() == ('-', '-'):
                 self.log("{0} pass".format(move.color))
                 self.current_mn += 1
@@ -196,10 +196,10 @@ class ControllerUnsafe(ControllerBase):
         Internal function to undo the last move made on the goban.
         """
         if 0 < self.current_mn:
-            def _prev_highlight(_):
+            def _prev_highlight(_=None):
                 self.current_mn -= 1
                 if 0 < self.current_mn:
-                    prev_move = self.kifu.game.getmove(self.current_mn).getmove()
+                    prev_move = self.kifu.getmove_at(self.current_mn)
                     if prev_move.getab() == ('-', '-'):
                         self.display.highlight(None)
                     else:
@@ -208,9 +208,9 @@ class ControllerUnsafe(ControllerBase):
                     self.display.highlight(None)
                 self.log("Move {0}".format(self.current_mn))
 
-            move = self.kifu.game.getmove(self.current_mn).getmove()
-            if move.getab() == ('-','-'):
-                _prev_highlight(_)
+            move = self.kifu.getmove_at(self.current_mn)
+            if move.getab() == ('-', '-'):
+                _prev_highlight()
             else:
                 self._remove(move, method=_prev_highlight)
 
@@ -234,7 +234,7 @@ class ControllerUnsafe(ControllerBase):
                         self.clickloc = x_, y_
 
     def _delete(self, _):
-        mv = self.kifu.getmove_at(*self.selected).getmove()
+        mv = self.kifu.locate(*self.selected).getmove()
 
         def delimpl(move):
             self.kifu.delete(move)
@@ -270,23 +270,24 @@ class ControllerUnsafe(ControllerBase):
         self.display.title("{0} - {1}".format(appname, basename(sfile)))
 
     def _save(self):
-        if self.kifu.sgffile is not None:
-            self.kifu.save()
+        sf = self.kifu.sgffile
+        if sf:
+            sfile = self.display.promptsave(initdir=dirname(sf), initfile=basename(sf))
         else:
             sfile = self.display.promptsave()
-            if len(sfile):
-                self.kifu.sgffile = sfile
-                self.kifu.save()
-                self.display.title("{0} - {1}".format(appname, basename(sfile)))
-            else:
-                self.log("Saving cancelled")
+        if len(sfile):
+            self.kifu.sgffile = sfile
+            self.kifu.save()
+            self.display.title("{0} - {1}".format(appname, basename(sfile)))
+        else:
+            self.log("Saving cancelled")
 
     def _goto(self, move_nr):
         """
         Update display and state to reach the specified move number.
 
         """
-        lastmove = self.kifu.game.lastmove()
+        lastmove = self.kifu.lastmove()
         if lastmove is not None:
             bound = max(0, min(move_nr, lastmove.number))
             while self.current_mn < bound:

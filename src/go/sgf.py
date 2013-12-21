@@ -129,37 +129,6 @@ class GameTree:
             child.output(f)
         f.write(")")
 
-    def getmove(self, number):
-        """
-        A.P. Return the Node corresponding to the given number, on the main branch.
-
-        """
-        if len(self.nodes):
-            idx = self.nodes[0].properties["MN"][0]
-            if number < idx:
-                raise IndexError("This game is after requested move ({0}) on the main branch.".format(number))
-            elif idx + len(self.nodes) < number and len(self):
-                return self[0].getmove(number)
-            else:
-                for node in self.nodes:
-                    if node.properties["MN"][0] == number:
-                        return node
-                if len(self):
-                    return self[0].getmove(number)
-                else:
-                    return None
-
-    def lastmove(self):
-        """
-        A.P.
-        Return the last move number of the game, on the main branch.
-
-        """
-        try:
-            return self[0].lastmove() if len(self) else self.nodes[-1].getmove()
-        except KeyError:
-            return None
-
     def __getitem__(self, item):
         """
         Provide direct getitem access to self.children.
@@ -219,6 +188,19 @@ class Node:
         self.number()
         self.parent.setup()
 
+    def output(self, f):
+        f.write(";")
+        for prop in self.properties.keys():
+            f.write(prop)
+            for value in self.properties[prop]:
+                if type(value) is not int:
+                    if "\\" in value:
+                        value = join(value.split("\\"), "\\\\")
+                    if "]" in value:
+                        value = join(value.split("]"), "\]")
+                f.write("[%s]" % value)
+            f.write("\n")
+
     def number(self, nb=None):
         """
         A.P.
@@ -242,19 +224,6 @@ class Node:
             except SgfWarning:  # previous is not a move, don't increment
                 pass
             self.properties["MN"] = [number]
-
-    def output(self, f):
-        f.write(";")
-        for prop in self.properties.keys():
-            f.write(prop)
-            for value in self.properties[prop]:
-                if type(value) is not int:
-                    if "\\" in value:
-                        value = join(value.split("\\"), "\\\\")
-                    if "]" in value:
-                        value = join(value.split("]"), "\]")
-                f.write("[%s]" % value)
-            f.write("\n")
 
     def getmove(self):
         """

@@ -118,8 +118,8 @@ class UI(Frame):
     def promptopen(self):
         return askopenfilename(filetypes=[("Smart Game Format", "sgf")])
 
-    def promptsave(self):
-        return asksaveasfilename(defaultextension="sgf")
+    def promptsave(self, initdir=None, initfile=None):
+        return asksaveasfilename(defaultextension="sgf", initialdir=initdir, initialfile=initfile)
 
     def promptgoto(self):
         number = askinteger("Jump", "Goto move")

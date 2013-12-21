@@ -10,8 +10,12 @@ class Kifu:
     """
     Utility class simplifying common interactions with the SGF structure.
 
-    For now it only supports one main line of play: no variations are allowed.
+    For now Kifu only supports one line of play: no variations are allowed.
     This means that an entire game is one single list of nodes.
+    In order to make future changes as seamless as possible, some python "magic methods"
+    have been used where possible. Hopefully they will help keep this "branch" concept
+    inside Kifu.
+    Methods currently relying on that naive implementation have a @naive doctag
 
     self.game -- the GameTree object backing the recording of this kifu.
 
@@ -31,7 +35,7 @@ class Kifu:
 
         idx = None
         # update subsequent moves number
-        for i in range(len(self.game.nodes)):
+        for i in range(len(self)):
             nd = self.game.nodes[i]
             try:
                 nb = nd.properties["MN"][0]
@@ -41,38 +45,56 @@ class Kifu:
                     idx = i
             except KeyError:
                 pass  # not a move
+
         if idx is not None:
             self.game.nodes.insert(idx, node)
+
+        # this insertion is actually an append
         elif i == number - 1:
             self.game.nodes.append(node)
 
-    def pop(self):
-        self.game.nodes.pop()
-
-    def last_move(self):
+    def getmove_at(self, number):
         """
-        Note: this is a naive implementation based on the assumption that the game has no children.
-        In other words, that there are not variations at all.
+        Return the move having the given number if found.
+        @naive
 
         """
-        return self.game.nodes[-1].getmove()
+        for node in self:
+            mv = node.getmove()
+            if mv is not None and mv.number == number:
+                return mv
+
+    def lastmove(self):
+        """
+        Return the last move on the main line of play, if any.
+        @naive
+
+        """
+        for i in range(-1, -len(self), -1):
+            mv = self[i].getmove()
+            if mv is not None:
+                return mv
 
     def next_color(self):
-        current = self.last_move()
+        """
+        Return the (guessed) color of the next move to append, based on a black-white alternation assumption.
+
+        """
+        current = self.lastmove()
         if current is not None:
             return 'B' if current.color == 'W' else 'W'
         else:
-            return 'B'
+            return 'B'  # probably the beginning of the game
 
     def relocate(self, origin, dest):
-        node = self.getmove_at(origin.x, origin.y)
+        node = self.locate(origin.x, origin.y)
         a, b = dest.getab()
         node.properties[origin.color] = [a + b]
 
-    def getmove_at(self, x, y):
+    def locate(self, x, y):
         """
-        Note: this is a naive implementation based on the assumption that the game has no children.
-        In other words, that there are not variations at all.
+        Return the node describing the given goban intersection, or None if the intersection is empty.
+        @naive
 
         """
         for node in self.game.nodes:
@@ -82,13 +104,12 @@ class Kifu:
 
     def delete(self, move):
         """
-        Note: this is a naive implementation based on the assumption that the game has no children.
-        In other words, that there are not variations at all.
+        @naive
 
         """
         decr = False
         torem = None
-        for node in self.game.nodes:
+        for node in self:
             if decr:
                 node.properties["MN"][0] -= 1
             else:
@@ -114,11 +135,35 @@ class Kifu:
         Create a new node for the given move.
 
         """
-        node = Node(self.game, self.game.nodes[-1])
+        node = Node(self.game, self[-1])
         r, c = move.getab()
         node.properties[move.color] = [r + c]  # sgf properties are in a list
         node.number()
         return node
+
+    def __iter__(self):
+        """
+         Iterate over the nodes of the main line of play.
+         @naive
+
+         """
+        return self.game.nodes.__iter__()
+
+    def __getitem__(self, item):
+        """
+         Return a node of the main line of play.
+         @naive
+
+         """
+        return self.game.nodes.__getitem__(item)
+
+    def __len__(self):
+        """
+         The number of nodes on the main line of play.
+         @naive
+
+         """
+        return self.game.nodes.__len__()
 
     def __repr__(self):
         return repr(self.game)
@@ -160,7 +205,8 @@ class Kifu:
                     collection = Collection(parser)
                     parser.parse(sgf_string)
                     log("Opened '{0}'".format(filepath))
-                    return Kifu(collection[0])
+                    kifu = Kifu(collection[0], filepath)
+                    return kifu
             except IOError as ioe:
                 log(ioe)
                 return Kifu.new()
