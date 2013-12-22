@@ -54,6 +54,8 @@ from go.sgfwarning import SgfWarning
 
 
 ### SGF OBJECTS
+from golib_conf import gsize
+
 
 class Collection:
     def __init__(self, parser=None):
@@ -299,6 +301,21 @@ class Move(object):
 
     def __eq__(self, o):
         return self.color == o.color and self.x == o.x and self.y == o.y
+
+    def __hash__(self):
+        """
+        Implementation based on the assumption that x, y are in [0, gsize[
+        Let gszise * gsize be g2.
+        Black positions hashes are in [0, g2[
+        White positions hashes are in [g2, 2*g2[
+        Pass moves are in [2*g2, 2*g2 + 1]
+
+        """
+        if 0 <= self.x and 0 <= self.y:
+            color = 0 if self.color == 'B' else gsize * gsize
+            return self.x + gsize * self.y + color
+        else:
+            return 2 * gsize * gsize + (1 if self.color == 'W' else 0)
 
     def __repr__(self):
         # chr coordinates

@@ -21,9 +21,10 @@ class Kifu:
 
     """
 
-    def __init__(self, game, sgffile=None):
-        self.game = game
-        self.sgffile = sgffile
+    def __init__(self, sgffile=None, log=None):
+        self.game = None
+        self.sgffile = None
+        self._parse(sgffile, log=log)
 
     def append(self, move):
         node = self._prepare(move)
@@ -53,14 +54,27 @@ class Kifu:
         elif i == number - 1:
             self.game.nodes.append(node)
 
+    def get_main_seq(self):
+        """
+        Return the sequence of moves of the main line of play.
+        @naive
+
+        """
+        seq = []
+        for node in self.game.nodes:
+            mv = node.getmove()
+            if mv:
+                seq.append(mv)
+        return seq
+
     def getmove_at(self, number):
         """
         Return the move having the given number if found.
         @naive
 
         """
-        for node in self:
-            mv = node.getmove()
+        for i in range(number, len(self)):
+            mv = self[i].getmove()
             if mv is not None and mv.number == number:
                 return mv
 
@@ -168,8 +182,7 @@ class Kifu:
     def __repr__(self):
         return repr(self.game)
 
-    @staticmethod
-    def new():
+    def _new(self):
         """
         Create an empty Kifu.
 
@@ -186,10 +199,9 @@ class Kifu:
         context.number()
         game.nodes.append(context)
 
-        return Kifu(game)
+        self.game = game
 
-    @staticmethod
-    def parse(filepath, log=None):
+    def _parse(self, filepath, log=None):
         """
         Create a Kifu reflecting the given file.
 
@@ -205,18 +217,18 @@ class Kifu:
                     collection = Collection(parser)
                     parser.parse(sgf_string)
                     log("Opened '{0}'".format(filepath))
-                    kifu = Kifu(collection[0], filepath)
-                    return kifu
+                    self.game = collection[0]
+                    self.sgffile = filepath
             except IOError as ioe:
                 log(ioe)
-                return Kifu.new()
+                self._new()
         else:
-            return Kifu.new()
+            self._new()
 
 
 if __name__ == '__main__':
     colors = ['B', 'W']
-    kifu = Kifu.new()
+    kifu = Kifu()
     previous = kifu.game.nodes[-1]
     for i in range(gsize):
         nod = Node(kifu.game, previous)

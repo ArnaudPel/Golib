@@ -61,8 +61,8 @@ class UI(Frame):
         self.buttons.grid(row=roff, column=coff+1, sticky=N, pady=10)
 
         b_delete = Button(self.buttons, text="Delete", command=lambda: self.execute("delete"))
-        b_open = Button(self.buttons, text="Open", command=lambda: self.execute("open"))
-        b_save = Button(self.buttons, text="Save", command=lambda: self.execute("save"))
+        # b_open = Button(self.buttons, text="Open", command=lambda: self.execute("open"))
+        # b_save = Button(self.buttons, text="Save", command=lambda: self.execute("save"))
 
         b_back = Button(self.buttons, text="<", command=lambda: self.execute("back"))
         b_forward = Button(self.buttons, text=">", command=lambda: self.execute("forward"))
@@ -73,8 +73,8 @@ class UI(Frame):
 
         # position buttons on the buttons grid
         b_delete.grid(row=0, column=0, columnspan=2)
-        b_open.grid(row=1, column=0)
-        b_save.grid(row=1, column=1)
+        # b_open.grid(row=1, column=0)
+        # b_save.grid(row=1, column=1)
 
         b_back.grid(row=2, column=0)
         b_forward.grid(row=2, column=1)
@@ -88,6 +88,12 @@ class UI(Frame):
 
     def create_menubar(self):
         self.menubar = Menu(self._root())
+
+        m_file = Menu(self.menubar)
+        m_file.add_command(label="New Game", command=lambda: self.execute("new"))
+        m_file.add_command(label="Open...", command=lambda: self.execute("open"))
+        m_file.add_command(label="Save...", command=lambda: self.execute("save"))
+        self.menubar.add_cascade(label="File", menu=m_file)
 
         # mac OS goody  todo what does it do on Linux or Windows ?
         m_help = Menu(self.menubar, name='help')

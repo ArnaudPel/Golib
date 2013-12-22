@@ -20,7 +20,7 @@ class ControllerBase(object):
     def __init__(self, kifufile=None):
         # temporary log implementation that will changed for a more decent pattern
         self.log = lambda msg: stdout.write(str(msg) + "\n")
-        self.kifu = Kifu.parse(kifufile, log=self.log)
+        self.kifu = Kifu(sgffile=kifufile, log=self.log)
         self.rules = Rule()
         self.current_mn = 0
         self.api = {
@@ -128,6 +128,7 @@ class ControllerUnsafe(ControllerBase):
 
         # dependency injection attempt
         try:
+            self.input.commands["new"] = self.loadkifu
             self.input.commands["open"] = self._open
             self.input.commands["save"] = self._save
             self.input.commands["delete"] = self._delete
@@ -150,10 +151,9 @@ class ControllerUnsafe(ControllerBase):
         self.keydown = None
 
     def _click(self, event):
-
         """
-        Internal function to add a move to the kifu and display it. The move
-        is expressed via a mouse click.
+        Internal function to select a move on click. Move adding is performed on mouse release.
+
         """
         x, y = getxy(event)
         self.clickloc = (x, y)
@@ -161,6 +161,10 @@ class ControllerUnsafe(ControllerBase):
         self.display.select(Move("Dummy", x, y))
 
     def _mouse_release(self, event):
+        """
+        Internal function to add a move to the kifu and display it. The move
+        is expressed via a mouse click.
+        """
         x, y = getxy(event)
         if (x, y) == self.clickloc:
             move = Move(self.kifu.next_color(), x, y)
@@ -170,6 +174,7 @@ class ControllerUnsafe(ControllerBase):
             else:
                 try:
                     self._put(move, method=self._append)
+                    self.log("Move {0}".format(self.current_mn))
                 except NotImplementedError as nie:
                     print nie
                     self.log("Please hold 'b' or 'w' and click to insert a move")
@@ -257,17 +262,18 @@ class ControllerUnsafe(ControllerBase):
         sfile = self.display.promptopen()
         if len(sfile):
             self.loadkifu(sfile)
-            self.display.clear()
-            self.rules = Rule()
-            self.current_mn = 0
         else:
             self.log("Opening cancelled")
 
-    def loadkifu(self, sfile):
-        self.kifu = Kifu.parse(sfile, log=self.log)
+    def loadkifu(self, sfile=None):
+        self.kifu = Kifu(sgffile=sfile, log=self.log)
         if sfile is None:
             sfile = "New game"
+            self.log("New game")
         self.display.title("{0} - {1}".format(appname, basename(sfile)))
+        self.display.clear()
+        self.rules = Rule()
+        self.current_mn = 0
 
     def _save(self):
         sf = self.kifu.sgffile
