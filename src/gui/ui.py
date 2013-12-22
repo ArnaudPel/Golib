@@ -1,6 +1,7 @@
 from Tkconstants import N
 from tkFileDialog import asksaveasfilename, askopenfilename
 from Tkinter import Misc, StringVar, Label, Menu
+from tkMessageBox import askquestion, askokcancel
 from tkSimpleDialog import askstring, askinteger
 from traceback import print_exc
 from ttk import Frame, Button
@@ -35,7 +36,9 @@ class UI(Frame):
 
         # these are expected to be set from outside, in an attempt to inject dependency via setter
         self.commands = {}
-        self.goban.bind("<q>", self.close)  # dev utility mostly, will probably have to be removed
+        self.goban.bind("<q>", lambda _: self.execute("close"))  # dev utility mostly, will probably have to be removed
+        self.master.protocol("WM_DELETE_WINDOW", lambda: self.execute("close"))
+        self.commands["close"] = lambda: self.master.quit()  # this command needs a default value
 
         # delegate some work to goban
         # todo make that a bit more generic, using registration or something
@@ -123,6 +126,10 @@ class UI(Frame):
 
     def promptopen(self):
         return askopenfilename(filetypes=[("Smart Game Format", "sgf")])
+
+    def promptdiscard(self, title="Unsaved changes"):
+        msg = "Discard unsaved changes in current game ?"
+        return askokcancel(title=title, message=msg, icon="warning")
 
     def promptsave(self, initdir=None, initfile=None):
         return asksaveasfilename(defaultextension="sgf", initialdir=initdir, initialfile=initfile)

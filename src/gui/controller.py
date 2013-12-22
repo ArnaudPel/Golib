@@ -63,9 +63,12 @@ class ControllerBase(object):
         self.current_mn += 1
         self.kifu.insert(move, self.current_mn)
 
+    def log_mn(self):
+        self.log("Move {0} / {1}".format(self.current_mn, self.kifu.lastmove().number))
+
     def _incr_move_number(self, _):
         self.current_mn += 1
-        self.log("Move {0}".format(self.current_mn))
+        self.log_mn()
 
     def printself(self, _):
         print self.rules
@@ -123,12 +126,12 @@ class ControllerUnsafe(ControllerBase):
         self.input.keyin.bind("<Down>", self._backward)
         self.input.keyin.bind("<p>", self.printself)
         self.input.keyin.bind("<g>", lambda _: self._goto(self.display.promptgoto()))
-        self.input.keyin.bind("<Escape>", lambda _: self.display.select(None))
+        self.input.keyin.bind("<Escape>", lambda _: self._select())
         self.input.keyin.bind("<Delete>", self._delete)
 
         # dependency injection attempt
         try:
-            self.input.commands["new"] = self.loadkifu
+            self.input.commands["new"] = self._new
             self.input.commands["open"] = self._open
             self.input.commands["save"] = self._save
             self.input.commands["delete"] = self._delete
@@ -136,6 +139,7 @@ class ControllerUnsafe(ControllerBase):
             self.input.commands["forward"] = self._forward
             self.input.commands["beginning"] = lambda: self._goto(0)
             self.input.commands["end"] = lambda: self._goto(722)  # big overkill for any sane game
+            self.input.commands["close"] = self._onclose
         except AttributeError:
             print "Some commands could not be bound to User Interface."
 
@@ -147,7 +151,7 @@ class ControllerUnsafe(ControllerBase):
 
     def _keyrelease(self, _):
         if self.keydown in ('b', 'w'):
-            self.log("Move {0}".format(self.current_mn))
+            self.log_mn()
         self.keydown = None
 
     def _click(self, event):
@@ -157,8 +161,7 @@ class ControllerUnsafe(ControllerBase):
         """
         x, y = getxy(event)
         self.clickloc = (x, y)
-        self.selected = (x, y)
-        self.display.select(Move("Dummy", x, y))
+        self._select(Move("Dummy", x, y))
 
     def _mouse_release(self, event):
         """
@@ -171,13 +174,15 @@ class ControllerUnsafe(ControllerBase):
             if self.keydown in ('b', 'w'):
                 move.color = self.keydown.upper()
                 self._put(move, method=self._insert)
+                self._select(move)
             else:
                 try:
                     self._put(move, method=self._append)
-                    self.log("Move {0}".format(self.current_mn))
+                    self._select(move)
+                    self.log_mn()
                 except NotImplementedError as nie:
                     print nie
-                    self.log("Please hold 'b' or 'w' and click to insert a move")
+                    self.log("Please hold 'b' or 'w' key and click to insert a move")
 
     def _forward(self, event=None, checked=None):
         """
@@ -211,7 +216,7 @@ class ControllerUnsafe(ControllerBase):
                         self.display.highlight(prev_move)
                 else:
                     self.display.highlight(None)
-                self.log("Move {0}".format(self.current_mn))
+                self.log_mn()
 
             move = self.kifu.getmove_at(self.current_mn)
             if move.getab() == ('-', '-'):
@@ -239,14 +244,19 @@ class ControllerUnsafe(ControllerBase):
                         self.clickloc = x_, y_
 
     def _delete(self, _):
-        mv = self.kifu.locate(*self.selected).getmove()
+        if self.selected is not None:
+            mv = (self.kifu.locate(*self.selected)).getmove()
 
-        def delimpl(move):
-            self.kifu.delete(move)
-            self.current_mn -= 1
-            self.selected = None
+            def delimpl(move):
+                self.kifu.delete(move)
+                self.current_mn -= 1
+                lastmv = self.kifu.lastmove()
+                if lastmv and move.number-1 == lastmv.number:
+                    self._select(lastmv)
+                else:
+                    self._select()
 
-        self._remove(mv, delimpl)
+            self._remove(mv, delimpl)
 
     def _stone_put(self, move, captured, highlight=True):
         self.display.display(move)
@@ -264,6 +274,10 @@ class ControllerUnsafe(ControllerBase):
             self.loadkifu(sfile)
         else:
             self.log("Opening cancelled")
+
+    def _new(self):
+        if not self.kifu.modified or self.display.promptdiscard(title="Open new game"):
+            self.loadkifu()
 
     def loadkifu(self, sfile=None):
         self.kifu = Kifu(sgffile=sfile, log=self.log)
@@ -288,6 +302,14 @@ class ControllerUnsafe(ControllerBase):
         else:
             self.log("Saving cancelled")
 
+    def _select(self, move=None):
+        if move:
+            self.selected = move.x, move.y
+            self.display.select(move)
+        else:
+            self.selected = None
+            self.display.select(None)
+
     def _goto(self, move_nr):
         """
         Update display and state to reach the specified move number.
@@ -300,6 +322,10 @@ class ControllerUnsafe(ControllerBase):
                 self._forward(checked=True)
             while bound < self.current_mn:
                 self._backward(None)
+
+    def _onclose(self):
+        if not self.kifu.modified or self.display.promptdiscard(title="Closing {0}".format(appname)):
+            raise SystemExit(0)
 
 
 class Controller(ControllerUnsafe):

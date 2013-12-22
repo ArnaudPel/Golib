@@ -25,10 +25,12 @@ class Kifu:
         self.game = None
         self.sgffile = None
         self._parse(sgffile, log=log)
+        self.modified = False
 
     def append(self, move):
         node = self._prepare(move)
         self.game.nodes.append(node)
+        self.modified = True
 
     def insert(self, move, number):
         node = self._prepare(move)
@@ -53,10 +55,39 @@ class Kifu:
         # this insertion is actually an append
         elif i == number - 1:
             self.game.nodes.append(node)
+        self.modified = True
+
+    def relocate(self, origin, dest):
+        node = self.locate(origin.x, origin.y)
+        a, b = dest.getab()
+        node.properties[origin.color] = [a + b]
+        self.modified = True
+
+    def delete(self, move):
+        """
+        @naive
+
+        """
+        decr = False
+        torem = None
+        for node in self:
+            if decr:
+                node.properties["MN"][0] -= 1
+            else:
+                try:
+                    if node.getmove().number == move.number:
+                        decr = True
+                        torem = node
+                        # keep looping to decrement subsequent moves
+                except AttributeError:
+                    pass
+        if torem is not None:
+            self.game.nodes.remove(torem)
+            self.modified = True
 
     def get_main_seq(self):
         """
-        Return the sequence of moves of the main line of play.
+        Return the sequence of moves of the main line of play, in a fresh list.
         @naive
 
         """
@@ -100,11 +131,6 @@ class Kifu:
         else:
             return 'B'  # probably the beginning of the game
 
-    def relocate(self, origin, dest):
-        node = self.locate(origin.x, origin.y)
-        a, b = dest.getab()
-        node.properties[origin.color] = [a + b]
-
     def locate(self, x, y):
         """
         Return the node describing the given goban intersection, or None if the intersection is empty.
@@ -116,30 +142,11 @@ class Kifu:
             if mv and mv.x == x and mv.y == y:
                 return node
 
-    def delete(self, move):
-        """
-        @naive
-
-        """
-        decr = False
-        torem = None
-        for node in self:
-            if decr:
-                node.properties["MN"][0] -= 1
-            else:
-                try:
-                    if node.getmove().number == move.number:
-                        decr = True
-                        torem = node
-                except AttributeError:
-                    pass
-        if torem is not None:
-            self.game.nodes.remove(torem)
-
     def save(self):
         if self.sgffile is not None:
             with open(self.sgffile, 'w') as f:
                 self.game.output(f)
+                self.modified = False
                 print "Game saved to: " + self.sgffile
         else:
             raise SgfWarning("No file defined, can't save.")
