@@ -1,8 +1,9 @@
 from Tkconstants import N
+from platform import system
 from tkFileDialog import asksaveasfilename, askopenfilename
 from Tkinter import Misc, StringVar, Label, Menu
-from tkMessageBox import askquestion, askokcancel
-from tkSimpleDialog import askstring, askinteger
+from tkMessageBox import askokcancel
+from tkSimpleDialog import askinteger
 from traceback import print_exc
 from ttk import Frame, Button
 from golib_conf import appname
@@ -16,6 +17,11 @@ __author__ = 'Kohistan'
 The main user interface.
 
 """
+
+if "Darwin" in system():
+    mod1 = "Command"
+else:
+    mod1 = "Control"
 
 
 class UI(Frame):
@@ -93,9 +99,15 @@ class UI(Frame):
         self.menubar = Menu(self._root())
 
         m_file = Menu(self.menubar)
-        m_file.add_command(label="New Game", command=lambda: self.execute("new"))
-        m_file.add_command(label="Open...", command=lambda: self.execute("open"))
-        m_file.add_command(label="Save...", command=lambda: self.execute("save"))
+        m_file.add_command(label="New Game", command=lambda: self.execute("new"), accelerator=mod1+"N")
+        self.bind_all("<{0}-n>".format(mod1), lambda _: self.execute("new"))
+
+        m_file.add_command(label="Open...", command=lambda: self.execute("open"), accelerator=mod1+"O")
+        self.bind_all("<{0}-o>".format(mod1), lambda _: self.execute("open"))
+
+        m_file.add_command(label="Save...", command=lambda: self.execute("save"), accelerator=mod1+"+S")
+        self.bind_all("<{0}-s>".format(mod1), lambda _: self.execute("save"))
+
         self.menubar.add_cascade(label="File", menu=m_file)
 
         # mac OS goody  todo what does it do on Linux or Windows ?

@@ -18,7 +18,7 @@ class ControllerBase(object):
     """
 
     def __init__(self, kifufile=None):
-        # temporary log implementation that will changed for a more decent pattern
+        # temporary log implementation that will hopefully be changed for a more decent framework
         self.log = lambda msg: stdout.write(str(msg) + "\n")
         self.kifu = Kifu(sgffile=kifufile, log=self.log)
         self.rules = Rule()
@@ -55,23 +55,21 @@ class ControllerBase(object):
         """
         if self.at_last_move():
             self.kifu.append(move)
-            self.current_mn += 1
+            self._incr_move_number()
         else:
             raise NotImplementedError("Variations are not allowed yet.")
 
     def _insert(self, move):
-        self.current_mn += 1
+        self._incr_move_number()
         self.kifu.insert(move, self.current_mn)
 
-    def log_mn(self):
-        self.log("Move {0} / {1}".format(self.current_mn, self.kifu.lastmove().number))
-
-    def _incr_move_number(self, _):
+    def _incr_move_number(self, _=None):
         self.current_mn += 1
         self.log_mn()
 
-    def printself(self, _):
-        print self.rules
+    def at_last_move(self):
+        last_move = self.kifu.lastmove()
+        return not last_move or (self.current_mn == last_move.number)
 
     def _stone_put(self, move, captured):
         """ Called after a stone has been put to Rule(). Use to update listeners (e.g. GUI). """
@@ -81,9 +79,11 @@ class ControllerBase(object):
         """ Called after a stone has been removed from Rule(). Use to update listeners (e.g. GUI). """
         pass
 
-    def at_last_move(self):
-        last_move = self.kifu.lastmove()
-        return not last_move or (self.current_mn == last_move.number)
+    def log_mn(self):
+        self.log("Move {0} / {1}".format(self.current_mn, self.kifu.lastmove().number))
+
+    def printself(self, _):
+        print self.rules
 
 
 class ControllerUnsafe(ControllerBase):
