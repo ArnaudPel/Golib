@@ -113,26 +113,34 @@ class ControllerUnsafe(ControllerBase):
         """
         Bind the action listeners.
         """
-        self.input.mousein.bind("<Button-1>", self._click)
-        self.input.mousein.bind("<B1-Motion>", self._drag)
-        self.input.mousein.bind("<ButtonRelease-1>", self._mouse_release)
-        self.input.mousein.bind("<Button-2>", self._backward)
+        try:
+            self.input.mousein.bind("<Button-1>", self._click)
+            self.input.mousein.bind("<B1-Motion>", self._drag)
+            self.input.mousein.bind("<ButtonRelease-1>", self._mouse_release)
+            self.input.mousein.bind("<Button-2>", self._backward)
+        except AttributeError as ae:
+            self.log("Some mouse actions could not be bound to User Interface.")
+            self.log(ae)
 
-        self.input.keyin.bind("<Key>", self._keypress)
-        self.input.keyin.bind("<KeyRelease>", self._keyrelease)
-        self.input.keyin.bind("<Right>", self._forward)
-        self.input.keyin.bind("<Up>", self._forward)
-        self.input.keyin.bind("<Left>", self._backward)
-        self.input.keyin.bind("<Down>", self._backward)
-        self.input.keyin.bind("<p>", self.printself)
-        self.input.keyin.bind("<g>", lambda _: self._goto(self.display.promptgoto()))
-        self.input.keyin.bind("<Escape>", lambda _: self._select())
-        self.input.keyin.bind("<Delete>", self._delete)
+        try:
+            self.input.keyin.bind("<Key>", self._keypress)
+            self.input.keyin.bind("<KeyRelease>", self._keyrelease)
+            self.input.keyin.bind("<Right>", self._forward)
+            self.input.keyin.bind("<Up>", self._forward)
+            self.input.keyin.bind("<Left>", self._backward)
+            self.input.keyin.bind("<Down>", self._backward)
+            self.input.keyin.bind("<p>", self.printself)
+            self.input.keyin.bind("<g>", lambda _: self._goto(self.display.promptgoto()))
+            self.input.keyin.bind("<Escape>", lambda _: self._select())
+            self.input.keyin.bind("<Delete>", self._delete)
+        except AttributeError as ae:
+            self.log("Some keys could not be bound to User Interface.")
+            self.log(ae)
 
         # dependency injection attempt
         try:
             self.input.commands["new"] = self._new
-            self.input.commands["open"] = self._open
+            self.input.commands["open"] = self._opensgf
             self.input.commands["save"] = self._save
             self.input.commands["delete"] = self._delete
             self.input.commands["back"] = self._backward
@@ -140,8 +148,9 @@ class ControllerUnsafe(ControllerBase):
             self.input.commands["beginning"] = lambda: self._goto(0)
             self.input.commands["end"] = lambda: self._goto(722)  # big overkill for any sane game
             self.input.commands["close"] = self._onclose
-        except AttributeError:
-            print "Some commands could not be bound to User Interface."
+        except AttributeError as ae:
+            self.log("Some commands could not be bound to User Interface.")
+            self.log(ae)
 
     def _keypress(self, event):
         self.keydown = event.char
@@ -268,12 +277,12 @@ class ControllerUnsafe(ControllerBase):
         self.display.erase(move)
         self.display.display(freed)  # put previously dead stones back
 
-    def _open(self):
-        sfile = self.display.promptopen()
+    def _opensgf(self):
+        sfile = self.display.promptopen(filetypes=[("Smart Game Format", "sgf")])
         if len(sfile):
             self.loadkifu(sfile)
         else:
-            self.log("Opening cancelled")
+            self.log("Opening sgf cancelled")
 
     def _new(self):
         if not self.kifu.modified or self.display.promptdiscard(title="Open new game"):

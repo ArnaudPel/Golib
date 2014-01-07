@@ -136,8 +136,11 @@ class UI(Frame):
     def message(self, msg):
         self.msg.set(msg)
 
-    def promptopen(self):
-        return askopenfilename(filetypes=[("Smart Game Format", "sgf")])
+    def promptopen(self, filetypes=None):
+        if filetypes:
+            return askopenfilename(filetypes=filetypes)
+        else:
+            return askopenfilename()
 
     def promptdiscard(self, title="Unsaved changes"):
         msg = "Discard unsaved changes in current game ?"
