@@ -17,10 +17,10 @@ class ControllerBase(object):
 
     """
 
-    def __init__(self, kifufile=None):
+    def __init__(self, sgffile=None):
         # temporary log implementation that will hopefully be changed for a more decent framework
         self.log = lambda msg: stdout.write(str(msg) + "\n")
-        self.kifu = Kifu(sgffile=kifufile, log=self.log)
+        self.kifu = Kifu(sgffile=sgffile, log=self.log)
         self.rules = Rule()
         self.current_mn = 0
         self.api = {
@@ -93,7 +93,7 @@ class ControllerUnsafe(ControllerBase):
 
     """
 
-    def __init__(self, user_input, display, kifufile=None):
+    def __init__(self, user_input, display, sgffile=None):
         super(ControllerUnsafe, self).__init__(None)  # use our own kifu loading
         self.display = display
         self.input = user_input
@@ -106,7 +106,7 @@ class ControllerUnsafe(ControllerBase):
         self._bind()
         self.keydown = None
 
-        self.loadkifu(kifufile)
+        self.loadkifu(sgffile)
 
     def _bind(self):
 
@@ -344,8 +344,8 @@ class Controller(ControllerUnsafe):
 
     """
 
-    def __init__(self, user_input, display, kifufile=None):
-        super(Controller, self).__init__(user_input, display, kifufile)
+    def __init__(self, user_input, display, sgffile=None):
+        super(Controller, self).__init__(user_input, display, sgffile)
         self.rlock = RLock()
 
     def _put(self, move, method=None):

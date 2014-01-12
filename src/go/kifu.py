@@ -85,17 +85,22 @@ class Kifu:
             self.game.nodes.remove(torem)
             self.modified = True
 
-    def get_main_seq(self):
+    def get_move_seq(self, first=1, last=1000):
         """
-        Return the sequence of moves of the main line of play, in a fresh list.
+        Return the sub-sequence of moves of the main line of play, in a fresh list.
+        Non-move nodes (like startup node) are ignored.
         @naive
+
+        first, last -- move number delimiting the sequence (both inclusive)
 
         """
         seq = []
-        for node in self.game.nodes:
-            mv = node.getmove()
-            if mv:
+        for i in range(first, len(self)):
+            mv = self[i].getmove()
+            if mv and (first <= mv.number <= last):
                 seq.append(mv)
+                if mv.number == last:
+                    break
         return seq
 
     def getmove_at(self, number):

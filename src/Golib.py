@@ -38,7 +38,7 @@ if __name__ == '__main__':
     app.pack()
 
     args = get_argparser().parse_args()
-    control = Controller(app, app, kifufile=args.sgf)
+    control = Controller(app, app, sgffile=args.sgf)
 
     # mac OS special, to bring app to front at startup
     if "Darwin" in platform.system():

@@ -42,7 +42,6 @@ class UI(Frame):
 
         # these are expected to be set from outside, in an attempt to inject dependency via setter
         self.commands = {}
-        self.goban.bind("<q>", lambda _: self.execute("close"))  # dev utility mostly, will probably have to be removed
         self.master.protocol("WM_DELETE_WINDOW", lambda: self.execute("close"))
         self.commands["close"] = lambda: self.master.quit()  # this command needs a default value
 
