@@ -290,9 +290,10 @@ class ControllerUnsafe(ControllerBase):
 
     def loadkifu(self, sfile=None):
         self.kifu = Kifu(sgffile=sfile, log=self.log)
-        if sfile is None:
+        if self.kifu.sgffile is None:
             sfile = "New game"
-            self.log("New game")
+            if sfile is None:  # if sfile is not None here, there's been a file reading error
+                self.log("New game")
         self.display.title("{0} - {1}".format(appname, basename(sfile)))
         self.display.clear()
         self.rules = Rule()
@@ -322,15 +323,17 @@ class ControllerUnsafe(ControllerBase):
     def _goto(self, move_nr):
         """
         Update display and state to reach the specified move number.
+        move_nr -- the move number to jump to.
 
         """
-        lastmove = self.kifu.lastmove()
-        if lastmove is not None:
-            bound = max(0, min(move_nr, lastmove.number))
-            while self.current_mn < bound:
-                self._forward(checked=True)
-            while bound < self.current_mn:
-                self._backward(None)
+        if move_nr is not None:
+            lastmove = self.kifu.lastmove()
+            if lastmove is not None:
+                bound = max(0, min(move_nr, lastmove.number))
+                while self.current_mn < bound:
+                    self._forward(checked=True)
+                while bound < self.current_mn:
+                    self._backward(None)
 
     def _onclose(self):
         if not self.kifu.modified or self.display.promptdiscard(title="Closing {0}".format(appname)):

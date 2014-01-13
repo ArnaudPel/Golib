@@ -149,7 +149,7 @@ class UI(Frame):
         return asksaveasfilename(defaultextension="sgf", initialdir=initdir, initialfile=initfile)
 
     def promptgoto(self):
-        number = askinteger("Jump", "Goto move")
+        number = askinteger("Jump", "Go to move")
         self.goban.focus_set()
         return number
 
