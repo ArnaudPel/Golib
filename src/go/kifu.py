@@ -59,7 +59,7 @@ class Kifu:
 
     def relocate(self, origin, dest):
         node = self.locate(origin.x, origin.y)
-        a, b = dest.getab()
+        a, b = dest.get_coord("sgf")
         node.properties[origin.color] = [a + b]
         self.modified = True
 
@@ -114,6 +114,13 @@ class Kifu:
             if mv is not None and mv.number == number:
                 return mv
 
+    def contains_move(self, move, start=0):
+        for i in range(start, len(self)):
+            mv = self[i].getmove()
+            if mv == move:
+                return True
+        return False
+
     def lastmove(self):
         """
         Return the last move on the main line of play, if any.
@@ -136,16 +143,17 @@ class Kifu:
         else:
             return 'B'  # probably the beginning of the game
 
-    def locate(self, x, y):
+    def locate(self, x, y, upbound=None):
         """
         Return the node describing the given goban intersection, or None if the intersection is empty.
         @naive
 
         """
-        for node in self.game.nodes:
-            mv = node.getmove()
+        start = upbound if upbound else len(self) - 1
+        for i in range(start, -1, -1):  # go backwards to match move on screen
+            mv = self[i].getmove()
             if mv and mv.x == x and mv.y == y:
-                return node
+                return self[i]
 
     def save(self):
         if self.sgffile is not None:
@@ -162,7 +170,7 @@ class Kifu:
 
         """
         node = Node(self.game, self[-1])
-        r, c = move.getab()
+        r, c = move.get_coord("sgf")
         node.properties[move.color] = [r + c]  # sgf properties are in a list
         node.number()
         return node

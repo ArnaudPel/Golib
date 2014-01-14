@@ -15,6 +15,7 @@ made to that state.
 
 class RuleUnsafe(object):
     """
+    Class responsible for holding the state of a game (stones currently on the goban, liberties count)
     This class is not thread safe.
     Its consistency is highly dependent on the good usage of self.confirm()
 
@@ -22,7 +23,11 @@ class RuleUnsafe(object):
 
     def __init__(self):
         self.stones = [['E' for _ in range(gsize)] for _ in range(gsize)]
+        self.stones_buff = None
+
         self.deleted = []
+        self.deleted_buff = None
+
         self.reset()  # initialize buffers
 
     def copystones(self):
@@ -30,7 +35,7 @@ class RuleUnsafe(object):
 
     def confirm(self):
         """
-        Persist the state of the last check, either next() or previous()
+        Persist the state of the last check, either put() or remove()
 
         """
         if self.stones_buff is not None:
@@ -86,7 +91,7 @@ class RuleUnsafe(object):
                 if nblibs == 0:
                     safe = True  # killed at least one enemy
                     for k, l in group:
-                        deleted.add(Move(enem_color, k, l))
+                        deleted.add(Move("tk", (enem_color, k, l)))
                         self.stones_buff[k][l] = 'E'
                         try:
                             enemies.remove((k, l))

@@ -3,7 +3,7 @@ from ntpath import basename, dirname
 from threading import RLock
 from golib_conf import rwidth, gsize, appname
 
-from go.rules import Rule
+from go.rules import Rule, RuleUnsafe
 from go.sgf import Move
 from go.kifu import Kifu
 
@@ -24,7 +24,7 @@ class ControllerBase(object):
         self.rules = Rule()
         self.current_mn = 0
         self.api = {
-            "append": lambda c, x, y: self._put(Move(c, x, y), method=self._append)
+            "append": lambda move: self._put(move, method=self._append)
         }
 
     def _put(self, move, method=None):
@@ -60,8 +60,11 @@ class ControllerBase(object):
             raise NotImplementedError("Variations are not allowed yet.")
 
     def _insert(self, move):
-        self._incr_move_number()
-        self.kifu.insert(move, self.current_mn)
+        if 0 < self.current_mn:
+            self._incr_move_number()
+            self.kifu.insert(move, self.current_mn)
+        else:
+            self._append(move)
 
     def _incr_move_number(self, _=None):
         self.current_mn += 1
@@ -156,7 +159,7 @@ class ControllerUnsafe(ControllerBase):
         self.keydown = event.char
         if self.keydown in ('b', 'w'):
             color = "black" if self.keydown == 'b' else "white"
-            self.log("Ready to insert {0} stone as move {1}".format(color, self.current_mn))
+            self.log("Ready to insert {0} stone as move {1}".format(color, self.current_mn+1))
 
     def _keyrelease(self, _):
         if self.keydown in ('b', 'w'):
@@ -170,7 +173,7 @@ class ControllerUnsafe(ControllerBase):
         """
         x, y = getxy(event)
         self.clickloc = (x, y)
-        self._select(Move("Dummy", x, y))
+        self._select(Move("tk", ("Dummy", x, y)))
 
     def _mouse_release(self, event):
         """
@@ -179,9 +182,30 @@ class ControllerUnsafe(ControllerBase):
         """
         x, y = getxy(event)
         if (x, y) == self.clickloc:
-            move = Move(self.kifu.next_color(), x, y)
+            move = Move("tk", (self.kifu.next_color(), x, y))
             if self.keydown in ('b', 'w'):
                 move.color = self.keydown.upper()
+                # check for potential conflict:
+                # forwarding can be blocked if we occupy a position already used later in game
+                if self.kifu.contains_move(move, start=self.current_mn):
+                    # checking move presence in self.kifu is not enough,
+                    # as the current stone may be captured before any conflict appears
+                    rule = RuleUnsafe()  # no need for thread safety here
+
+                    # initialize rule object up to insert position
+                    for nr in range(1, self.current_mn + 1):
+                        tempmv = self.kifu.getmove_at(nr)
+                        rule.put(tempmv, reset=False)
+                    rule.put(move, reset=False)
+
+                    # perform check
+                    # todo I think there is still a bug related to ko (when insertion is right before conflicting move)
+                    for nr in range(self.current_mn + 1, self.kifu.lastmove().number + 1):
+                        tempmv = self.kifu.getmove_at(nr)
+                        auth, data = rule.put(tempmv, reset=False)
+                        if not auth:
+                            self.log("Cannot insert move at %d: %s at move %d" % (self.current_mn, data, nr))
+                            return
                 self._put(move, method=self._insert)
                 self._select(move)
             else:
@@ -203,7 +227,7 @@ class ControllerUnsafe(ControllerBase):
             checked = not self.at_last_move()
         if checked:
             move = self.kifu.getmove_at(self.current_mn + 1)
-            if move.getab() == ('-', '-'):
+            if move.get_coord("sgf") == ('-', '-'):
                 self.log("{0} pass".format(move.color))
                 self.current_mn += 1
             else:
@@ -219,7 +243,7 @@ class ControllerUnsafe(ControllerBase):
                 self.current_mn -= 1
                 if 0 < self.current_mn:
                     prev_move = self.kifu.getmove_at(self.current_mn)
-                    if prev_move.getab() == ('-', '-'):
+                    if prev_move.get_coord("sgf") == ('-', '-'):
                         self.display.highlight(None)
                     else:
                         self.display.highlight(prev_move)
@@ -228,7 +252,7 @@ class ControllerUnsafe(ControllerBase):
                 self.log_mn()
 
             move = self.kifu.getmove_at(self.current_mn)
-            if move.getab() == ('-', '-'):
+            if move.get_coord("sgf") == ('-', '-'):
                 _prev_highlight()
             else:
                 self._remove(move, method=_prev_highlight)
@@ -236,11 +260,13 @@ class ControllerUnsafe(ControllerBase):
     def _drag(self, event):
         x_ = event.x / rwidth
         y_ = event.y / rwidth
-        if self.clickloc != (x_, y_):
-            color = self.rules.stones[self.clickloc[0]][self.clickloc[1]]
+        x_loc = self.clickloc[0]
+        y_loc = self.clickloc[1]
+        if (x_loc, y_loc) != (x_, y_):
+            color = self.rules.stones[x_loc][y_loc]
             if color in ('B', 'W'):
-                origin = Move(color, *self.clickloc)
-                dest = Move(color, x_, y_)
+                origin = Move("tk", (color, x_loc, y_loc))
+                dest = Move("tk", (color, x_, y_))
                 rem_allowed, freed = self.rules.remove(origin)
                 if rem_allowed:
                     put_allowed, captured = self.rules.put(dest, reset=False)
@@ -254,13 +280,13 @@ class ControllerUnsafe(ControllerBase):
 
     def _delete(self, _):
         if self.selected is not None:
-            mv = (self.kifu.locate(*self.selected)).getmove()
+            mv = self.kifu.locate(*self.selected, upbound=self.current_mn).getmove()
 
             def delimpl(move):
                 self.kifu.delete(move)
                 self.current_mn -= 1
                 lastmv = self.kifu.lastmove()
-                if lastmv and move.number-1 == lastmv.number:
+                if lastmv and move.number - 1 == lastmv.number:
                     self._select(lastmv)
                 else:
                     self._select()

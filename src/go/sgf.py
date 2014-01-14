@@ -255,7 +255,7 @@ class Node:
         if pos is not None:
             if len(pos) == 0:
                 pos = '--'  # the player has passed
-            return Move(color, *pos, number=number)
+            return Move("sgf", (color, pos[0], pos[1]), number=number)
         return None
 
     def __repr__(self):
@@ -275,29 +275,74 @@ class Node:
 class Move(object):
     """
     A.P.
-    Class to simplify int-to-chr move representation.
-
-    -- self.color is an uppercase char, B or W  (or E)
-    -- self.x  is the (0-based) row index
-    -- self.y  '  '   '         col index
+    Class to regroup "move" representations. Such representations can take several forms:
+        - openCV coordinate frame ()
+        - kgs coordinate frame (with the I column removed)
+        - sgf format
 
     """
 
-    def __init__(self, color, row, col, number=-1):
-        self.color = color
-        self.x = row if type(row) is int else ord(row) - 97
-        self.y = col if type(col) is int else ord(col) - 97
+    def __init__(self, ctype, ctuple=None, string=None, number=-1):
         self.number = number
+        self.color = None
+        self.x = self.y = None
+        # tuple argument trumps string argument
+        if ctuple is None:
+            ctuple = self.split_str(ctype, string)
 
-    def getab(self):
+        if ctuple is not None:
+            self.interpret(ctype, *ctuple)
+        else:
+            raise TypeError("Please provide \"ctuple\" or \"string\" keyword argument")
+
+    def interpret(self, ctype, color, a, b):
+        self.color = color
+        if ctype == "tk":
+            self.x = a
+            self.y = b
+        elif ctype == "sgf":
+            self.x = ord(a) - 97
+            self.y = ord(b) - 97
+        elif ctype == "cv":
+            self.x = b
+            self.y = a
+        elif ctype == "kgs":
+            self.x = ord(a) - (65 if ord(a) < 73 else 66)
+            self.y = gsize - int(b)
+        else:
+            raise TypeError("Unrecognized coordinate type: \"%s\"" % ctype)
+
+    # @staticmethod
+    def split_str(self, ctype, s):
+        if s is None:
+            return None
+        elif ctype == "sgf":
+            return s[0], s[2], s[3]
+        elif ctype == "kgs":
+            return s[0], s[2], (s[3] if len(s) == 5 else s[3:5])
+        else:
+            raise NotImplementedError("No string parser for coordinate type \"%s\"" % str(ctype))
+
+    def get_coord(self, ctype="sgf"):
         """
-        Return the chr coordinates of this move.
+        Return coordinates of this move in the provided coordinate frame (ctype), as a tuple.
+        Basically invert the conversion operated in __init__().
 
         """
-        return chr(self.x + 97), chr(self.y + 97)
+        if ctype == "tk":
+            return self.x, self.y
+        elif ctype == "sgf":
+            return chr(self.x + 97), chr(self.y + 97)
+        elif ctype == "cv":
+            return self.y, self.x
+        elif ctype == "kgs":
+            return chr(self.x + (65 if self.x < 8 else 66)), gsize - self.y
 
     def copy(self):
-        return Move(self.color, self.x, self.y, self.number)
+        return Move("tk", (self.color, self.x, self.y), number=self.number)
+
+    def repr(self, ctype):
+        return "{0}[{1}{2}]".format(self.color, *self.get_coord(ctype=ctype))
 
     def __eq__(self, o):
         return self.color == o.color and self.x == o.x and self.y == o.y
@@ -318,12 +363,13 @@ class Move(object):
             return 2 * gsize * gsize + (1 if self.color == 'W' else 0)
 
     def __repr__(self):
-        # chr coordinates
-        #return "{0}[{1}{2}]".format(self.color, *self.getab())
+        # temporary changing type below during dev/debug can be useful
 
-        # kgs quite un-sgf-complying coordinate frame:
-        offset = 97 if self.x < 8 else 98
-        return "{0}[{1}{2}]".format(self.color, chr(self.x + offset), 19 - self.y)
+        # coord_type = "sgf"
+        # coord_type = "cv"
+        # coord_type = "kgs"
+        coord_type = "tk"
+        return self.repr(coord_type)
 
 
 ### SGF PARSER
