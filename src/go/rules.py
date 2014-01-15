@@ -81,7 +81,8 @@ class RuleUnsafe(object):
             enemies = []
             deleted = set()
             safe = False
-            self.deleted_buff.append(deleted)
+            assert 0 < move.number, "Cannot put a null or negative move number."
+            self.deleted_buff.insert(move.number-1, deleted)
             for row, col in connected(x_, y_):
                 neighcolor = self.stones_buff[row][col]
                 if neighcolor == enem_color:
@@ -98,7 +99,7 @@ class RuleUnsafe(object):
                         except ValueError:
                             pass
 
-            # check for suicide play if need be
+            # check for suicide play if not already safe
             retval = True, deleted
             if not safe:
                 _, nblibs = self._data(x_, y_)
@@ -128,7 +129,8 @@ class RuleUnsafe(object):
         allowed = self.stones_buff[x_][y_] == move.color
         if allowed:
             self.stones_buff[x_][y_] = 'E'
-            data = self.deleted_buff.pop()
+            assert 0 < move.number, "Cannot remove a null or negative move number."
+            data = self.deleted_buff.pop(move.number-1)
             for mv in data:
                 self.stones_buff[mv.x][mv.y] = mv.color
         else:

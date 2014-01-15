@@ -172,7 +172,7 @@ class Kifu:
         node = Node(self.game, self[-1])
         r, c = move.get_coord("sgf")
         node.properties[move.color] = [r + c]  # sgf properties are in a list
-        node.number()
+        node.number(nb=move.number)
         return node
 
     def __iter__(self):

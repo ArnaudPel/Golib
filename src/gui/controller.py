@@ -23,9 +23,6 @@ class ControllerBase(object):
         self.kifu = Kifu(sgffile=sgffile, log=self.log)
         self.rules = Rule()
         self.current_mn = 0
-        self.api = {
-            "append": lambda move: self._put(move, method=self._append)
-        }
 
     def _put(self, move, method=None):
         allowed, data = self.rules.put(move)
@@ -182,7 +179,7 @@ class ControllerUnsafe(ControllerBase):
         """
         x, y = getxy(event)
         if (x, y) == self.clickloc:
-            move = Move("tk", (self.kifu.next_color(), x, y))
+            move = Move("tk", (self.kifu.next_color(), x, y), number=self.current_mn+1)
             if self.keydown in ('b', 'w'):
                 move.color = self.keydown.upper()
                 # check for potential conflict:
@@ -247,8 +244,8 @@ class ControllerUnsafe(ControllerBase):
         if (x_loc, y_loc) != (x_, y_):
             color = self.rules.stones[x_loc][y_loc]
             if color in ('B', 'W'):
-                origin = Move("tk", (color, x_loc, y_loc))
-                dest = Move("tk", (color, x_, y_))
+                origin = self.kifu.locate(x_loc, y_loc).getmove()
+                dest = Move("tk", (color, x_, y_), number=origin.number)
                 rem_allowed, freed = self.rules.remove(origin)
                 if rem_allowed:
                     put_allowed, captured = self.rules.put(dest, reset=False)

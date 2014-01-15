@@ -203,14 +203,14 @@ class Node:
                 f.write("[%s]" % value)
             f.write("\n")
 
-    def number(self, nb=None):
+    def number(self, nb=-1):
         """
         A.P.
         Set the move number property (MN) if not already there.
 
         """
         # if number provided, force update
-        if nb is not None:
+        if 0 <= nb:
             self.properties["MN"] = [nb]
 
         # else create number only if it is missing
