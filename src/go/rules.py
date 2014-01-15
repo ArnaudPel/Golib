@@ -64,8 +64,8 @@ class RuleUnsafe(object):
             self.reset()
 
         # check for ko rule
-        if len(self.deleted):
-            lastdel = self.deleted[-1]
+        if len(self.deleted_buff):
+            lastdel = self.deleted_buff[-1]
             if (len(lastdel) == 1) and (move == iter(lastdel).next()):
                 return False, "Ko"
 
@@ -159,6 +159,27 @@ class RuleUnsafe(object):
                     self._data(x, y, _group, _libs)
         return _group, len(_libs)
 
+    def grids_repr(self):
+        """
+        Display both confirmed and buffered grid side by side.
+        Will look nicer with monospaced fonts.
+
+        """
+        string = "Confirmed".ljust(44)
+        string += "Buffer\n"
+        for x in range(gsize):
+            for y in range(gsize):
+                char = self.stones[y][x]
+                string += char if char != 'E' else '~'
+                string += ' '
+            string += "  ||  "
+            for y in range(gsize):
+                char = self.stones_buff[y][x]
+                string += char if char != 'E' else '~'
+                string += ' '
+            string += "\n"
+        return string
+
     def __getitem__(self, item):
         return self.stones.__getitem__(item)
 
@@ -167,13 +188,7 @@ class RuleUnsafe(object):
         For debugging purposes, can be modified at will.
 
         """
-        string = ''
-        for x in range(gsize):
-            for y in range(gsize):
-                string += self.stones[y][x]
-                string += ' '
-            string += "\n"
-        return string
+        return self.grids_repr()
 
 
 class Rule(RuleUnsafe):

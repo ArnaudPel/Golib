@@ -158,8 +158,8 @@ class ControllerUnsafe(ControllerBase):
     def _keypress(self, event):
         self.keydown = event.char
         if self.keydown in ('b', 'w'):
-            color = "black" if self.keydown == 'b' else "white"
-            self.log("Ready to insert {0} stone as move {1}".format(color, self.current_mn+1))
+            color = "Black" if self.keydown == 'b' else "White"
+            self.log("Insert {0} stone as move {1}".format(color, self.current_mn+1))
 
     def _keyrelease(self, _):
         if self.keydown in ('b', 'w'):
@@ -187,27 +187,9 @@ class ControllerUnsafe(ControllerBase):
                 move.color = self.keydown.upper()
                 # check for potential conflict:
                 # forwarding can be blocked if we occupy a position already used later in game
-                if self.kifu.contains_move(move, start=self.current_mn):
-                    # checking move presence in self.kifu is not enough,
-                    # as the current stone may be captured before any conflict appears
-                    rule = RuleUnsafe()  # no need for thread safety here
-
-                    # initialize rule object up to insert position
-                    for nr in range(1, self.current_mn + 1):
-                        tempmv = self.kifu.getmove_at(nr)
-                        rule.put(tempmv, reset=False)
-                    rule.put(move, reset=False)
-
-                    # perform check
-                    # todo I think there is still a bug related to ko (when insertion is right before conflicting move)
-                    for nr in range(self.current_mn + 1, self.kifu.lastmove().number + 1):
-                        tempmv = self.kifu.getmove_at(nr)
-                        auth, data = rule.put(tempmv, reset=False)
-                        if not auth:
-                            self.log("Cannot insert move at %d: %s at move %d" % (self.current_mn, data, nr))
-                            return
-                self._put(move, method=self._insert)
-                self._select(move)
+                if self._checkinsert(move):
+                    self._put(move, method=self._insert)
+                    self._select(move)
             else:
                 try:
                     self._put(move, method=self._append)
@@ -292,6 +274,34 @@ class ControllerUnsafe(ControllerBase):
                     self._select()
 
             self._remove(mv, delimpl)
+
+    def _checkinsert(self, move):
+        """
+        Check that "move" can be inserted at self.current_mn.
+        Forward check from the insertion move number, to ensure that no conflict will occur in the sequence:
+        if a stone is inserted while another is recorded to be played later at the same location, it can
+        create severe problems (as of current implementation, forward navigation cannot go past the conflict).
+
+        """
+        if self.kifu.contains_move(move, start=self.current_mn):
+            # checking move presence in self.kifu is not enough,
+            # as the current stone may be captured before any conflict appears
+            rule = RuleUnsafe()  # no need for thread safety here
+
+            # initialize rule object up to insert position
+            for nr in range(1, self.current_mn + 1):
+                tempmv = self.kifu.getmove_at(nr)
+                rule.put(tempmv, reset=False)
+            rule.put(move, reset=False)
+
+            # perform check
+            for nr in range(self.current_mn + 1, self.kifu.lastmove().number + 1):
+                tempmv = self.kifu.getmove_at(nr)
+                auth, data = rule.put(tempmv, reset=False)
+                if not auth:
+                    self.log("Cannot insert move at %d: %s at move %d" % (self.current_mn, data, nr))
+                    return False
+        return True
 
     def _stone_put(self, move, captured, highlight=True):
         self.display.display(move)
