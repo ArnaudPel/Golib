@@ -1,6 +1,6 @@
 from threading import RLock
+from go.move import Move
 from golib_conf import gsize
-from go.sgf import Move
 from go.stateerror import StateError
 
 

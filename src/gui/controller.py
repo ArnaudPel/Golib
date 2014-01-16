@@ -1,10 +1,10 @@
 from sys import stdout
 from ntpath import basename, dirname
 from threading import RLock
+from go.move import Move
 from golib_conf import rwidth, gsize, appname
 
 from go.rules import Rule, RuleUnsafe
-from go.sgf import Move
 from go.kifu import Kifu
 
 

@@ -1,6 +1,6 @@
 from sys import stdout
 from golib_conf import gsize
-from go.sgf import Collection, GameTree, Node, Parser
+from go.sgfck import CollectionGl, GameTreeGl, NodeGl, Parser
 from go.sgfwarning import SgfWarning
 
 __author__ = 'Kohistan'
@@ -114,6 +114,18 @@ class Kifu:
             if mv is not None and mv.number == number:
                 return mv
 
+    def locate(self, x, y, upbound=None):
+        """
+        Return the node describing the given goban intersection, or None if the intersection is empty.
+        @naive
+
+        """
+        start = upbound if upbound else len(self) - 1
+        for i in range(start, -1, -1):  # go backwards to match move on screen
+            mv = self[i].getmove()
+            if mv and mv.x == x and mv.y == y:
+                return self[i]
+
     def contains_move(self, move, start=0):
         for i in range(start, len(self)):
             mv = self[i].getmove()
@@ -143,18 +155,6 @@ class Kifu:
         else:
             return 'B'  # probably the beginning of the game
 
-    def locate(self, x, y, upbound=None):
-        """
-        Return the node describing the given goban intersection, or None if the intersection is empty.
-        @naive
-
-        """
-        start = upbound if upbound else len(self) - 1
-        for i in range(start, -1, -1):  # go backwards to match move on screen
-            mv = self[i].getmove()
-            if mv and mv.x == x and mv.y == y:
-                return self[i]
-
     def save(self):
         if self.sgffile is not None:
             with open(self.sgffile, 'w') as f:
@@ -169,7 +169,7 @@ class Kifu:
         Create a new node for the given move.
 
         """
-        node = Node(self.game, self[-1])
+        node = NodeGl(self.game, self[-1])
         r, c = move.get_coord("sgf")
         node.properties[move.color] = [r + c]  # sgf properties are in a list
         node.number(nb=move.number)
@@ -208,12 +208,12 @@ class Kifu:
 
         """
         # initialize game
-        collection = Collection()
-        game = GameTree(collection)
+        collection = CollectionGl()
+        game = GameTreeGl(collection)
         collection.children.append(game)
 
         # add context node
-        context = Node(game, None)
+        context = NodeGl(game, None)
         context.properties["SZ"] = [gsize]
         context.properties['C'] = ["Recorded with Camkifu."]
         context.number()
@@ -234,7 +234,7 @@ class Kifu:
                     parser = Parser()
                     sgf_string = f.read()
                     f.close()
-                    collection = Collection(parser)
+                    collection = CollectionGl(parser)
                     parser.parse(sgf_string)
                     log("Opened '{0}'".format(filepath))
                     self.game = collection[0]
@@ -242,8 +242,10 @@ class Kifu:
             except IOError as ioe:
                 log(ioe)
                 self._new()
+                log("Opened new game")
         else:
             self._new()
+            log("Opened new game")
 
 
 if __name__ == '__main__':
@@ -251,7 +253,7 @@ if __name__ == '__main__':
     kifu = Kifu()
     previous = kifu.game.nodes[-1]
     for i in range(gsize):
-        nod = Node(kifu.game, previous)
+        nod = NodeGl(kifu.game, previous)
         nod.properties[colors[i % 2]] = [chr(i + 97) + chr(i + 97)]
         kifu.game.nodes.append(nod)
         previous = nod
