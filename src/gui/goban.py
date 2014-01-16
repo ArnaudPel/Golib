@@ -1,4 +1,5 @@
 from Tkinter import Canvas
+from go.move import Move
 from golib_conf import gsize, rwidth
 
 __author__ = 'Kohistan'
@@ -35,29 +36,28 @@ class Goban(Canvas):
                 oval = self.create_oval(xcenter - wid, ycenter - wid, xcenter + wid, ycenter + wid)
                 self.itemconfigure(oval, fill="black")
 
-    def display(self, moves, highlight=False):
+    def stones_changed(self, grid):
         """
-        Display a stone on the goban.
+        Update the display to match the color grid provided.
+        grid -- a matrix of colors.
 
         """
-        mves = moves if type(moves) in (list, set) else [moves]
-        for move in mves:
-            if self.stones[move.x][move.y] is not None:
-                print "Warning: displaying a stone on top of another. Erasing previous stone."
-                self.stones[move.x][move.y].erase()
-            stone = Stone(self, move, highlight)
-            stone.paint()
-            self.stones[move.x][move.y] = stone
-
-    def erase(self, moves):
-        """
-        coords -- the stones to erase from display.
-
-        """
-        mves = moves if type(moves) in (list, set) else [moves]
-        for move in mves:
-            self.stones[move.x][move.y].erase()  # clean canvas
-            self.stones[move.x][move.y] = None
+        for x in range(len(grid)):
+            for y in range(len(grid[x])):
+                color = grid[x][y]
+                prev = self.stones[x][y]
+                if color == 'E':
+                    if prev is not None:
+                        prev.erase()
+                        self.stones[x][y] = None
+                elif color in ('B', 'W'):
+                    if prev is not None:
+                        self.stones[x][y].erase()
+                    stone = Stone(self, Move("tk", ctuple=(color, x, y)))
+                    stone.paint()
+                    self.stones[x][y] = stone
+                else:
+                    raise TypeError("Unrecognized color: \"%s\"" % color)
 
     def clear(self):
         self.delete("all")
@@ -69,28 +69,18 @@ class Goban(Canvas):
             # loop is ugly, but no additional structure needed
             for stone in self:
                 stone.highlight(False)
-        if move:
+        try:
             self.stones[move.x][move.y].highlight(True)
+        except (AttributeError, IndexError):
+            pass
 
     def select(self, move):
         for stone in self:
             stone.select(False)
         try:
             self.stones[move.x][move.y].select(True)
-        except AttributeError:
+        except (AttributeError, IndexError):
             pass  # selection cleared
-
-    def relocate(self, origin, destination):
-        stone = self.stones[origin.x][origin.y]
-        if stone:
-            stone.erase()
-            self.stones[origin.x][origin.y] = None
-
-            stone.setpos(destination.x, destination.y)
-            stone.paint()
-            self.stones[destination.x][destination.y] = stone
-        else:
-            print "Nothing to relocate."
 
     def __iter__(self):
         for x in range(gsize):
@@ -113,7 +103,7 @@ tk_inv_colors = {'W': "black", 'B': "white"}
 
 class Stone(object):
     def __init__(self, canvas, move, highlight=False, selected=False):
-        self.canvas = canvas
+        self.goban = canvas
         self._move = move.copy()  # self.move location may be changed by Stone
         self._hl = highlight
         self.selected = selected
@@ -133,7 +123,7 @@ class Stone(object):
     def erase(self):
         while len(self.tkindexes):
             idx = self.tkindexes.pop()
-            self.canvas.delete(idx)
+            self.goban.delete(idx)
 
     def highlight(self, hl):
         if hl != self._hl:
@@ -156,8 +146,8 @@ class Stone(object):
         x1 = (x_ + 1) * rwidth - self.border
         y1 = (y_ + 1) * rwidth - self.border
 
-        oval_id = self.canvas.create_oval(x0, y0, x1, y1)
-        self.canvas.itemconfigure(oval_id, fill=tkcolors[self._move.color])
+        oval_id = self.goban.create_oval(x0, y0, x1, y1)
+        self.goban.itemconfigure(oval_id, fill=tkcolors[self._move.color])
         self.tkindexes.append(oval_id)
 
     def _paint_highlight(self):
@@ -169,8 +159,8 @@ class Stone(object):
             x1 = (x_ + 1) * rwidth - 5 * self.border
             y1 = (y_ + 1) * rwidth - 5 * self.border
 
-            hl_id = self.canvas.create_oval(x0, y0, x1, y1)
-            self.canvas.itemconfigure(hl_id, fill=tk_inv_colors[self._move.color])
+            hl_id = self.goban.create_oval(x0, y0, x1, y1)
+            self.goban.itemconfigure(hl_id, fill=tk_inv_colors[self._move.color])
             self.tkindexes.append(hl_id)
 
     def _paint_selected(self):
@@ -183,12 +173,12 @@ class Stone(object):
             x1 = (x_ + 1) * rwidth
             y1 = (y_ + 1) * rwidth
 
-            oval_id = self.canvas.create_oval(x0, y0, x1, y1)
-            self.canvas.itemconfigure(oval_id, outline="red", width=self.border)
+            oval_id = self.goban.create_oval(x0, y0, x1, y1)
+            self.goban.itemconfigure(oval_id, outline="red", width=self.border)
             self.tkindexes.append(oval_id)
 
     def copy(self):
-        return Stone(self.canvas, self._move, highlight=self._hl, selected=self.selected)
+        return Stone(self.goban, self._move, highlight=self._hl, selected=self.selected)
 
 
 

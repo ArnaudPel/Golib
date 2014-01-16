@@ -2,6 +2,7 @@ from sys import stdout
 from ntpath import basename, dirname
 from threading import RLock
 from go.move import Move
+from go.stateerror import StateError
 from golib_conf import rwidth, gsize, appname
 
 from go.rules import Rule, RuleUnsafe
@@ -24,26 +25,6 @@ class ControllerBase(object):
         self.rules = Rule()
         self.current_mn = 0
 
-    def _put(self, move, method=None):
-        allowed, data = self.rules.put(move)
-        if allowed:
-            if method is not None:
-                method(move)
-            self.rules.confirm()
-            self._stone_put(move, data)
-        else:
-            self.log(data)
-
-    def _remove(self, move, method=None):
-        allowed, data = self.rules.remove(move)
-        if allowed:
-            self.rules.confirm()
-            self._stone_removed(move, data)
-            if method is not None:
-                method(move)
-        else:
-            self.log(data)
-
     def _append(self, move):
         """
         Append the move to self.kifu if the controller is pointing at the last move.
@@ -52,35 +33,33 @@ class ControllerBase(object):
         """
         if self.at_last_move():
             self.kifu.append(move)
+            self.rules.confirm()
             self._incr_move_number()
         else:
-            raise NotImplementedError("Variations are not allowed yet.")
+            raise NotImplementedError("Variations not allowed yet. Hold 'b' or 'w' key + click to insert a move")
 
     def _insert(self, move):
         if 0 < self.current_mn:
-            self._incr_move_number()
             self.kifu.insert(move, self.current_mn)
+            self.rules.confirm()
+            self._incr_move_number()
         else:
             self._append(move)
 
-    def _incr_move_number(self, _=None):
-        self.current_mn += 1
+    def _incr_move_number(self, step=1):
+        self.current_mn += step
         self.log_mn()
 
     def at_last_move(self):
         last_move = self.kifu.lastmove()
         return not last_move or (self.current_mn == last_move.number)
 
-    def _stone_put(self, move, captured):
-        """ Called after a stone has been put to Rule(). Use to update listeners (e.g. GUI). """
-        pass
-
-    def _stone_removed(self, move, freed):
-        """ Called after a stone has been removed from Rule(). Use to update listeners (e.g. GUI). """
-        pass
-
     def log_mn(self):
-        self.log("Move {0} / {1}".format(self.current_mn, self.kifu.lastmove().number))
+        mv = self.kifu.getmove_at(self.current_mn)
+        if mv and (mv.get_coord("sgf") == ('-', '-')):
+            self.log("{0} pass".format(mv.color))
+        else:
+            self.log("Move {0} / {1}".format(self.current_mn, self.kifu.lastmove().number))
 
     def printself(self, _):
         print self.rules
@@ -95,9 +74,11 @@ class ControllerUnsafe(ControllerBase):
 
     def __init__(self, user_input, display, sgffile=None):
         super(ControllerUnsafe, self).__init__(None)  # use our own kifu loading
+        self.rules = Rule(listener=display)
         self.display = display
         self.input = user_input
         self.clickloc = None
+        self.dragging = False
         self.selected = None
 
         # temporary log implementation that will changed for a more decent pattern
@@ -156,7 +137,7 @@ class ControllerUnsafe(ControllerBase):
         self.keydown = event.char
         if self.keydown in ('b', 'w'):
             color = "Black" if self.keydown == 'b' else "White"
-            self.log("Insert {0} stone as move {1}".format(color, self.current_mn+1))
+            self.log("Insert {0} stone as move {1}".format(color, self.current_mn + 1))
 
     def _keyrelease(self, _):
         if self.keydown in ('b', 'w'):
@@ -178,63 +159,24 @@ class ControllerUnsafe(ControllerBase):
         is expressed via a mouse click.
         """
         x, y = getxy(event)
-        if (x, y) == self.clickloc:
-            move = Move("tk", (self.kifu.next_color(), x, y), number=self.current_mn+1)
-            if self.keydown in ('b', 'w'):
-                move.color = self.keydown.upper()
-                # check for potential conflict:
-                # forwarding can be blocked if we occupy a position already used later in game
-                if self._checkinsert(move):
-                    self._put(move, method=self._insert)
-                    self._select(move)
-            else:
-                try:
-                    self._put(move, method=self._append)
-                    self._select(move)
-                    self.log_mn()
-                except NotImplementedError as nie:
-                    print nie
-                    self.log("Please hold 'b' or 'w' key and click to insert a move")
-
-    def _forward(self, event=None, checked=None):
-        """
-        Internal function to display the next kifu stone on the goban.
-
-        check -- allow for bound checking to have happened outside.
-        """
-        if checked is None:
-            checked = not self.at_last_move()
-        if checked:
-            move = self.kifu.getmove_at(self.current_mn + 1)
-            if move.get_coord("sgf") == ('-', '-'):
-                self.log("{0} pass".format(move.color))
-                self.current_mn += 1
-            else:
-                self._put(move, method=self._incr_move_number)
-
-    def _backward(self, event=None):
-
-        """
-        Internal function to undo the last move made on the goban.
-        """
-        if 0 < self.current_mn:
-            def _prev_highlight(_=None):
-                self.current_mn -= 1
-                if 0 < self.current_mn:
-                    prev_move = self.kifu.getmove_at(self.current_mn)
-                    if prev_move.get_coord("sgf") == ('-', '-'):
-                        self.display.highlight(None)
-                    else:
-                        self.display.highlight(prev_move)
+        if not self.dragging:
+            move = Move("tk", (self.kifu.next_color(), x, y), number=self.current_mn + 1)
+            try:
+                if self.keydown in ('b', 'w'):
+                    move.color = self.keydown.upper()
+                    # check for potential conflict:
+                    # forwarding can be blocked if we occupy a position already used later in game
+                    if self._checkinsert(move):
+                        self.rules.put(move)
+                        self._insert(move)
+                        self.rules.confirm()
                 else:
-                    self.display.highlight(None)
-                self.log_mn()
-
-            move = self.kifu.getmove_at(self.current_mn)
-            if move.get_coord("sgf") == ('-', '-'):
-                _prev_highlight()
-            else:
-                self._remove(move, method=_prev_highlight)
+                    self.rules.put(move)
+                    self._append(move)
+            except (StateError, NotImplementedError) as err:
+                self.log(err)
+        else:
+            self.dragging = False
 
     def _drag(self, event):
         x_ = event.x / rwidth
@@ -242,35 +184,66 @@ class ControllerUnsafe(ControllerBase):
         x_loc = self.clickloc[0]
         y_loc = self.clickloc[1]
         if (x_loc, y_loc) != (x_, y_):
+            self.dragging = True
             color = self.rules.stones[x_loc][y_loc]
             if color in ('B', 'W'):
                 origin = self.kifu.locate(x_loc, y_loc).getmove()
                 dest = Move("tk", (color, x_, y_), number=origin.number)
-                rem_allowed, freed = self.rules.remove(origin)
-                if rem_allowed:
-                    put_allowed, captured = self.rules.put(dest, reset=False)
-                    if put_allowed:
+                if self._checkinsert(dest):
+                    try:
+                        self.rules.remove(origin)
+                        self.rules.put(dest, reset=False)
                         self.rules.confirm()
                         self.kifu.relocate(origin, dest)
-                        self.display.relocate(origin, dest)
-                        self.display.display(freed)
-                        self.display.erase(captured)
+                        self.display.highlight(self.kifu.getmove_at(self.current_mn))
                         self.clickloc = x_, y_
+                    except StateError as se:
+                        self.log(se)
+
+    def _forward(self, event=None):
+        """
+        Internal function to display the next kifu stone on the goban.
+
+        check -- allow for bound checking to have happened outside.
+        """
+        if not self.at_last_move():
+            move = self.kifu.getmove_at(self.current_mn + 1)
+            self.rules.put(move)
+            self.rules.confirm()
+            self._incr_move_number()
+
+    def _backward(self, event=None):
+
+        """
+        Internal function to undo the last move made on the goban.
+        """
+        if 0 < self.current_mn:
+            try:
+                move = self.kifu.getmove_at(self.current_mn)
+                self.rules.remove(move)
+                self.rules.confirm()
+                self._incr_move_number(step=-1)
+            except StateError as se:
+                self.log(se)
 
     def _delete(self, _):
         if self.selected is not None:
-            mv = self.kifu.locate(*self.selected, upbound=self.current_mn).getmove()
-
-            def delimpl(move):
+            try:
+                move = self.kifu.locate(*self.selected, upbound=self.current_mn).getmove()
+                self.rules.remove(move)
+                self.rules.confirm()
                 self.kifu.delete(move)
-                self.current_mn -= 1
+                self._incr_move_number(step=-1)
+
+                # point to next stone to delete, only if we are at the head
                 lastmv = self.kifu.lastmove()
                 if lastmv and move.number - 1 == lastmv.number:
                     self._select(lastmv)
                 else:
                     self._select()
 
-            self._remove(mv, delimpl)
+            except StateError as se:
+                self.log(se)
 
     def _checkinsert(self, move):
         """
@@ -280,7 +253,7 @@ class ControllerUnsafe(ControllerBase):
         create severe problems (as of current implementation, forward navigation cannot go past the conflict).
 
         """
-        if self.kifu.contains_move(move, start=self.current_mn):
+        if self.kifu.contains_pos(move.x, move.y, start=self.current_mn):
             # checking move presence in self.kifu is not enough,
             # as the current stone may be captured before any conflict appears
             rule = RuleUnsafe()  # no need for thread safety here
@@ -294,21 +267,20 @@ class ControllerUnsafe(ControllerBase):
             # perform check
             for nr in range(self.current_mn + 1, self.kifu.lastmove().number + 1):
                 tempmv = self.kifu.getmove_at(nr)
-                auth, data = rule.put(tempmv, reset=False)
-                if not auth:
-                    self.log("Cannot insert move at %d: %s at move %d" % (self.current_mn, data, nr))
+                try:
+                    rule.put(tempmv, reset=False)
+                except StateError as se:
+                    self.log("Cannot insert move at %d: %s at move %d" % (self.current_mn, se, nr))
                     return False
         return True
 
-    def _stone_put(self, move, captured, highlight=True):
-        self.display.display(move)
-        if highlight:
-            self.display.highlight(move)
-        self.display.erase(captured)
+    def _incr_move_number(self, step=1, _=None):
+        super(ControllerUnsafe, self)._incr_move_number(step=step)
+        self.display.highlight(self.kifu.getmove_at(self.current_mn))
 
-    def _stone_removed(self, move, freed):
-        self.display.erase(move)
-        self.display.display(freed)  # put previously dead stones back
+    def _append(self, move):
+        super(ControllerUnsafe, self)._append(move)
+        self._select(move)
 
     def _opensgf(self):
         sfile = self.display.promptopen(filetypes=[("Smart Game Format", "sgf")])
@@ -320,6 +292,7 @@ class ControllerUnsafe(ControllerBase):
     def _new(self):
         if not self.kifu.modified or self.display.promptdiscard(title="Open new game"):
             self.loadkifu()
+            self.log("New game")
 
     def loadkifu(self, sfile=None):
         self.kifu = Kifu(sgffile=sfile, log=self.log)
@@ -329,7 +302,7 @@ class ControllerUnsafe(ControllerBase):
                 self.log("New game")
         self.display.title("{0} - {1}".format(appname, basename(sfile)))
         self.display.clear()
-        self.rules = Rule()
+        self.rules.clear()
         self.current_mn = 0
 
     def _save(self):
@@ -359,14 +332,24 @@ class ControllerUnsafe(ControllerBase):
         move_nr -- the move number to jump to.
 
         """
+        # implementation note: this method was first based on the existing _forward() and _backward()
+        # with the current implementation of Rule/Display though, the successive confirm() made it too slow
         if move_nr is not None:
             lastmove = self.kifu.lastmove()
             if lastmove is not None:
                 bound = max(0, min(move_nr, lastmove.number))
+                self.rules.reset()  # need to do it manually, because it is not done below
                 while self.current_mn < bound:
-                    self._forward(checked=True)
+                    move = self.kifu.getmove_at(self.current_mn + 1)
+                    self.rules.put(move, reset=False)
+                    self.current_mn += 1
                 while bound < self.current_mn:
-                    self._backward(None)
+                    move = self.kifu.getmove_at(self.current_mn)
+                    self.rules.remove(move, reset=False)
+                    self.current_mn -= 1
+                self.rules.confirm()
+                self.display.highlight(self.kifu.getmove_at(self.current_mn))
+                self.log_mn()
 
     def _onclose(self):
         if not self.kifu.modified or self.display.promptdiscard(title="Closing {0}".format(appname)):
@@ -384,17 +367,7 @@ class Controller(ControllerUnsafe):
         super(Controller, self).__init__(user_input, display, sgffile)
         self.rlock = RLock()
 
-    def _put(self, move, method=None):
-        """
-        Lock the entire _put method so that another thread cannot cancel changes before they've been confirmed.
-
-        """
-        with self.rlock:
-            super(Controller, self)._put(move, method)
-
-    def _remove(self, move, method=None):
-        with self.rlock:
-            super(Controller, self)._remove(move, method)
+        # todo lock methods used by vision
 
 
 def getxy(click):

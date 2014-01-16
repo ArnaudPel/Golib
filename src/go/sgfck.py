@@ -19,7 +19,7 @@ Extensions of Tauber's SGF, in order not to mix codes. This mostly consists in a
 
 """
 
-Parser = Parser
+Parser = Parser  # redirect, so that go.sgf imports are exclusively made from the current file.
 
 
 class CollectionGl(Collection):

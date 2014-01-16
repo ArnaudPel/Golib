@@ -21,7 +21,8 @@ class RuleUnsafe(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, listener=None):
+        self.listener = listener
         self.stones = [['E' for _ in range(gsize)] for _ in range(gsize)]
         self.stones_buff = None
 
@@ -41,11 +42,16 @@ class RuleUnsafe(object):
         if self.stones_buff is not None:
             self.stones = self.stones_buff
             self.deleted = self.deleted_buff
+            if self.listener is not None:
+                self.listener.stones_changed(self.stones)
         else:
             raise StateError("Confirmation Denied")
 
+    def clear(self):
+        self.__init__(listener=self.listener)
+
     def reset(self):
-        """ Clear any unconfirmed data. """
+        """ Go back to the last confirmed state. """
         self.stones_buff = self.copystones()
         self.deleted_buff = list(self.deleted)
 
@@ -60,8 +66,14 @@ class RuleUnsafe(object):
         move -- the move to check for execution.
 
         """
+        assert 0 < move.number, "Cannot put a null or negative move number."
         if reset:
             self.reset()
+
+        # no check needed if move is "pass"
+        if move.get_coord("sgf") == ('-', '-'):
+            self.deleted_buff.insert(move.number-1, set())
+            return
 
         # check for ko rule
         if len(self.deleted_buff):
@@ -81,7 +93,6 @@ class RuleUnsafe(object):
             enemies = []
             deleted = set()
             safe = False
-            assert 0 < move.number, "Cannot put a null or negative move number."
             self.deleted_buff.insert(move.number-1, deleted)
             for row, col in connected(x_, y_):
                 neighcolor = self.stones_buff[row][col]
@@ -100,15 +111,12 @@ class RuleUnsafe(object):
                             pass
 
             # check for suicide play if not already safe
-            retval = True, deleted
             if not safe:
                 _, nblibs = self._data(x_, y_)
                 if not nblibs:
-                    retval = False, "Suicide"
+                    raise StateError("Suicide")
         else:
-            retval = False, "Occupied"
-
-        return retval
+            raise StateError("Occupied")
 
     def remove(self, move, reset=True):
         """
@@ -121,21 +129,27 @@ class RuleUnsafe(object):
         move -- the move to check for undo.
 
         """
+        assert 0 < move.number, "Cannot remove a null or negative move number."
         if reset:
             self.reset()
+
+        # no check needed if move is "pass"
+        if move.get_coord("sgf") == ('-', '-'):
+            self.deleted_buff.pop(move.number-1)
+            return
+
         x_ = move.x
         y_ = move.y
 
         allowed = self.stones_buff[x_][y_] == move.color
         if allowed:
             self.stones_buff[x_][y_] = 'E'
-            assert 0 < move.number, "Cannot remove a null or negative move number."
             data = self.deleted_buff.pop(move.number-1)
             for mv in data:
                 self.stones_buff[mv.x][mv.y] = mv.color
         else:
-            data = "Empty" if self.stones_buff[x_][y_] == 'E' else "Wrong Color."
-        return allowed, data
+            message = "Empty" if self.stones_buff[x_][y_] == 'E' else "Wrong Color."
+            raise StateError(message)
 
     def _data(self, x, y, _group=None, _libs=None):
         """
@@ -199,8 +213,8 @@ class Rule(RuleUnsafe):
 
     """
 
-    def __init__(self):
-        super(Rule, self).__init__()
+    def __init__(self, listener=None):
+        super(Rule, self).__init__(listener=listener)
         self.rlock = RLock()
 
     def put(self, move, reset=True):

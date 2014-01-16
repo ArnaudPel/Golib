@@ -126,11 +126,11 @@ class Kifu:
             if mv and mv.x == x and mv.y == y:
                 return self[i]
 
-    def contains_move(self, move, start=0):
+    def contains_pos(self, x, y, start=0):
         for i in range(start, len(self)):
             mv = self[i].getmove()
-            if mv == move:
-                return True
+            if (mv.x == x) and (mv.y == y):
+                return i
         return False
 
     def lastmove(self):

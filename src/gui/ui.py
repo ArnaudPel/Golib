@@ -47,12 +47,10 @@ class UI(Frame):
 
         # delegate some work to goban
         # todo make that a bit more generic, using registration or something
-        self.display = self.goban.display
+        self.stones_changed = self.goban.stones_changed
         self.highlight = self.goban.highlight
         self.select = self.goban.select
-        self.erase = self.goban.erase
         self.clear = self.goban.clear
-        self.relocate = self.goban.relocate
 
     def init_components(self):
         """
