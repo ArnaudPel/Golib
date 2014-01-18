@@ -40,7 +40,7 @@ class ControllerBase(object):
 
     def _insert(self, move):
         if 0 < self.current_mn:
-            self.kifu.insert(move, self.current_mn)
+            self.kifu.insert(move, self.current_mn+1)
             self.rules.confirm()
             self._incr_move_number()
         else:
@@ -198,6 +198,7 @@ class ControllerUnsafe(ControllerBase):
                         self.display.highlight(self.kifu.getmove_at(self.current_mn))
                         self.clickloc = x_, y_
                     except StateError as se:
+                        print se
                         self.log(se)
 
     def _forward(self, event=None):
@@ -283,11 +284,12 @@ class ControllerUnsafe(ControllerBase):
         self._select(move)
 
     def _opensgf(self):
-        sfile = self.display.promptopen(filetypes=[("Smart Game Format", "sgf")])
-        if len(sfile):
-            self.loadkifu(sfile)
-        else:
-            self.log("Opening sgf cancelled")
+        if not self.kifu.modified or self.display.promptdiscard(title="Open sgf"):
+            sfile = self.display.promptopen(filetypes=[("Smart Game Format", "sgf")])
+            if len(sfile):
+                self.loadkifu(sfile)
+            else:
+                self.log("Opening sgf cancelled")
 
     def _new(self):
         if not self.kifu.modified or self.display.promptdiscard(title="Open new game"):
@@ -333,7 +335,7 @@ class ControllerUnsafe(ControllerBase):
 
         """
         # implementation note: this method was first based on the existing _forward() and _backward()
-        # with the current implementation of Rule/Display though, the successive confirm() made it too slow
+        # this second implementation is more efficient though, as it can refresh display only at the end.
         if move_nr is not None:
             lastmove = self.kifu.lastmove()
             if lastmove is not None:

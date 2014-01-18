@@ -73,7 +73,11 @@ class Move(object):
         return Move("tk", (self.color, self.x, self.y), number=self.number)
 
     def repr(self, ctype):
-        return "{0}[{1}{2}]".format(self.color, *self.get_coord(ctype=ctype))
+        if 0 <= self.x:
+            mvstr = "{0}{1}".format(*self.get_coord(ctype=ctype))
+        else:
+            mvstr = "pass"
+        return "%s[%s]" % (self.color, mvstr)
 
     def __eq__(self, o):
         return self.color == o.color and self.x == o.x and self.y == o.y
@@ -98,8 +102,8 @@ class Move(object):
 
         # coord_type = "sgf"
         # coord_type = "cv"
-        # coord_type = "kgs"
-        coord_type = "tk"
+        coord_type = "kgs"
+        # coord_type = "tk"
         return self.repr(coord_type)
 
 
