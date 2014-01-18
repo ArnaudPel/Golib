@@ -31,6 +31,7 @@ class UI(Frame):
         self.goban = Goban(self)
         self.buttons = Frame(self)
         self.msg = StringVar(value="Hello")
+        self.err = StringVar(value="-")
         self.create_menubar()
         self.init_components()
 
@@ -76,6 +77,8 @@ class UI(Frame):
         b_end = Button(self.buttons, text=">>", command=lambda: self.execute("end"))
 
         msglabel = Label(self, textvariable=self.msg)
+        errlabel = Label(self, textvariable=self.err, fg="red")
+
 
         # position buttons on the buttons grid
         b_delete.grid(row=0, column=0, columnspan=2)
@@ -89,6 +92,7 @@ class UI(Frame):
 
         # position things on the main GUI grid
         msglabel.grid(row=1, column=0)
+        errlabel.grid(row=2, column=0)
 
         self.goban.focus_set()
 
@@ -132,6 +136,9 @@ class UI(Frame):
     # DISPLAY METHODS
     def message(self, msg):
         self.msg.set(msg)
+
+    def error(self, msg):
+        self.err.set(msg)
 
     def promptopen(self, filetypes=None):
         if filetypes:

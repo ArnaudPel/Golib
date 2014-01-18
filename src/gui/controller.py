@@ -1,4 +1,4 @@
-from sys import stdout
+from sys import stdout, stderr
 from ntpath import basename, dirname
 from threading import RLock
 from go.move import Move
@@ -21,7 +21,8 @@ class ControllerBase(object):
     def __init__(self, sgffile=None):
         # temporary log implementation that will hopefully be changed for a more decent framework
         self.log = lambda msg: stdout.write(str(msg) + "\n")
-        self.kifu = Kifu(sgffile=sgffile, log=self.log)
+        self.err = lambda msg: stderr.write(str(msg) + "\n")
+        self.kifu = Kifu(sgffile=sgffile, log=self.log, err=self.err)
         self.rules = Rule()
         self.current_mn = 0
 
@@ -37,14 +38,6 @@ class ControllerBase(object):
             self._incr_move_number()
         else:
             raise NotImplementedError("Variations not allowed yet. Hold 'b' or 'w' key + click to insert a move")
-
-    def _insert(self, move):
-        if 0 < self.current_mn:
-            self.kifu.insert(move, self.current_mn+1)
-            self.rules.confirm()
-            self._incr_move_number()
-        else:
-            self._append(move)
 
     def _incr_move_number(self, step=1):
         self.current_mn += step
@@ -83,6 +76,7 @@ class ControllerUnsafe(ControllerBase):
 
         # temporary log implementation that will changed for a more decent pattern
         self.log = self.display.message
+        self.err = self.display.error
 
         self._bind()
         self.keydown = None
@@ -100,8 +94,8 @@ class ControllerUnsafe(ControllerBase):
             self.input.mousein.bind("<ButtonRelease-1>", self._mouse_release)
             self.input.mousein.bind("<Button-2>", self._backward)
         except AttributeError as ae:
-            self.log("Some mouse actions could not be bound to User Interface.")
-            self.log(ae)
+            self.err("Some mouse actions could not be bound to User Interface.")
+            self.err(ae)
 
         try:
             self.input.keyin.bind("<Key>", self._keypress)
@@ -115,8 +109,8 @@ class ControllerUnsafe(ControllerBase):
             self.input.keyin.bind("<Escape>", lambda _: self._select())
             self.input.keyin.bind("<Delete>", self._delete)
         except AttributeError as ae:
-            self.log("Some keys could not be bound to User Interface.")
-            self.log(ae)
+            self.err("Some keys could not be bound to User Interface.")
+            self.err(ae)
 
         # dependency injection attempt
         try:
@@ -130,14 +124,17 @@ class ControllerUnsafe(ControllerBase):
             self.input.commands["end"] = lambda: self._goto(722)  # big overkill for any sane game
             self.input.commands["close"] = self._onclose
         except AttributeError as ae:
-            self.log("Some commands could not be bound to User Interface.")
-            self.log(ae)
+            self.err("Some commands could not be bound to User Interface.")
+            self.err(ae)
 
     def _keypress(self, event):
-        self.keydown = event.char
-        if self.keydown in ('b', 'w'):
-            color = "Black" if self.keydown == 'b' else "White"
-            self.log("Insert {0} stone as move {1}".format(color, self.current_mn + 1))
+        if self.keydown != event.char:
+            self.keydown = event.char
+            if self.keydown in ('b', 'w'):
+                color = "Black" if self.keydown == 'b' else "White"
+                self.log("Insert {0} stone as move {1}".format(color, self.current_mn + 1))
+        else:
+            print "ignoring keypress"
 
     def _keyrelease(self, _):
         if self.keydown in ('b', 'w'):
@@ -168,13 +165,18 @@ class ControllerUnsafe(ControllerBase):
                     # forwarding can be blocked if we occupy a position already used later in game
                     if self._checkinsert(move):
                         self.rules.put(move)
-                        self._insert(move)
+                        if 0 < self.current_mn:
+                            self.kifu.insert(move, self.current_mn + 1)
+                            self.rules.confirm()
+                            self._incr_move_number()
+                        else:
+                            self._append(move)
                         self.rules.confirm()
                 else:
                     self.rules.put(move)
                     self._append(move)
             except (StateError, NotImplementedError) as err:
-                self.log(err)
+                self.err(err)
         else:
             self.dragging = False
 
@@ -199,7 +201,7 @@ class ControllerUnsafe(ControllerBase):
                         self.clickloc = x_, y_
                     except StateError as se:
                         print se
-                        self.log(se)
+                        self.err(se)
 
     def _forward(self, event=None):
         """
@@ -225,7 +227,7 @@ class ControllerUnsafe(ControllerBase):
                 self.rules.confirm()
                 self._incr_move_number(step=-1)
             except StateError as se:
-                self.log(se)
+                self.err(se)
 
     def _delete(self, _):
         if self.selected is not None:
@@ -244,7 +246,7 @@ class ControllerUnsafe(ControllerBase):
                     self._select()
 
             except StateError as se:
-                self.log(se)
+                self.err(se)
 
     def _checkinsert(self, move):
         """
@@ -271,7 +273,7 @@ class ControllerUnsafe(ControllerBase):
                 try:
                     rule.put(tempmv, reset=False)
                 except StateError as se:
-                    self.log("Cannot insert move at %d: %s at move %d" % (self.current_mn, se, nr))
+                    self.err("Cannot insert move at %d: %s at move %d" % (self.current_mn, se, nr))
                     return False
         return True
 
@@ -297,7 +299,7 @@ class ControllerUnsafe(ControllerBase):
             self.log("New game")
 
     def loadkifu(self, sfile=None):
-        self.kifu = Kifu(sgffile=sfile, log=self.log)
+        self.kifu = Kifu(sgffile=sfile, log=self.log, err=self.err)
         if self.kifu.sgffile is None:
             sfile = "New game"
             if sfile is None:  # if sfile is not None here, there's been a file reading error

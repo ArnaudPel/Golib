@@ -21,10 +21,10 @@ class Kifu:
 
     """
 
-    def __init__(self, sgffile=None, log=None):
+    def __init__(self, sgffile=None, log=None, err=None):
         self.game = None
         self.sgffile = None
-        self._parse(sgffile, log=log)
+        self._parse(sgffile, log=log, err=err)
         self.modified = False
 
     def append(self, move):
@@ -221,7 +221,7 @@ class Kifu:
 
         self.game = game
 
-    def _parse(self, filepath, log=None):
+    def _parse(self, filepath, log=None, err=None):
         """
         Create a Kifu reflecting the given file.
 
@@ -240,9 +240,10 @@ class Kifu:
                     self.game = collection[0]
                     self.sgffile = filepath
             except IOError as ioe:
-                log(ioe)
                 self._new()
-                log("Opened new game")
+                if err is not None:
+                    err(ioe)
+                    err("Opened new game")
         else:
             self._new()
             log("Opened new game")
