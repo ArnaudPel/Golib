@@ -1,5 +1,7 @@
 # little hack to force Tauber's sgf extensibility.
 import go.sgf
+from golib_conf import B, W
+
 go.sgf.createtree = lambda parent, parser=None: GameTreeGl(parent, parser=parser)
 go.sgf.createnode = lambda parent, previous, parser=None: NodeGl(parent, previous, parser=parser)
 # end of little hack :)
@@ -111,13 +113,13 @@ class NodeGl(Node):
         except KeyError:
             pass
 
-        color = 'B'
+        color = B
         pos = None
         try:
             pos = self.properties[color][0]
         except KeyError:
             try:
-                color = 'W'
+                color = W
                 pos = self.properties[color][0]
             except KeyError:
                 keys = self.properties.keys()

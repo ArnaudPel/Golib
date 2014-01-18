@@ -1,5 +1,5 @@
 from sys import stdout
-from golib_conf import gsize
+from golib_conf import gsize, B, W
 from go.sgfck import CollectionGl, GameTreeGl, NodeGl, Parser
 from go.sgfwarning import SgfWarning
 
@@ -151,9 +151,9 @@ class Kifu:
         """
         current = self.lastmove()
         if current is not None:
-            return 'B' if current.color == 'W' else 'W'
+            return B if current.color == W else W
         else:
-            return 'B'  # probably the beginning of the game
+            return B  # probably the beginning of the game
 
     def save(self):
         if self.sgffile is not None:
@@ -250,7 +250,7 @@ class Kifu:
 
 
 if __name__ == '__main__':
-    colors = ['B', 'W']
+    colors = [B, W]
     kifu = Kifu()
     previous = kifu.game.nodes[-1]
     for i in range(gsize):

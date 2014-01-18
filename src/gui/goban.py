@@ -1,6 +1,6 @@
 from Tkinter import Canvas
 from go.move import Move
-from golib_conf import gsize, rwidth
+from golib_conf import gsize, rwidth, B, W, E
 
 __author__ = 'Kohistan'
 
@@ -46,11 +46,11 @@ class Goban(Canvas):
             for y in range(len(grid[x])):
                 color = grid[x][y]
                 prev = self.stones[x][y]
-                if color == 'E':
+                if color == E:
                     if prev is not None:
                         prev.erase()
                         self.stones[x][y] = None
-                elif color in ('B', 'W'):
+                elif color in (B, W):
                     if prev is not None:
                         self.stones[x][y].erase()
                     stone = Stone(self, Move("tk", ctuple=(color, x, y)))
@@ -97,8 +97,8 @@ def mtx(size):
     """
     return [[None for _ in range(size)] for _ in range(size)]
 
-tkcolors = {'B': "black", 'W': "white"}
-tk_inv_colors = {'W': "black", 'B': "white"}
+tkcolors = {B: "black", W: "white"}
+tk_inv_colors = {W: "black", B: "white"}
 
 
 class Stone(object):

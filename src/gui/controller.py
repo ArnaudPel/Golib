@@ -3,7 +3,7 @@ from ntpath import basename, dirname
 from threading import RLock
 from go.move import Move
 from go.stateerror import StateError
-from golib_conf import rwidth, gsize, appname
+from golib_conf import rwidth, gsize, appname, B, W
 
 from go.rules import Rule, RuleUnsafe
 from go.kifu import Kifu
@@ -175,6 +175,7 @@ class ControllerUnsafe(ControllerBase):
                 else:
                     self.rules.put(move)
                     self._append(move)
+                return move  # to be used by extending code
             except (StateError, NotImplementedError) as err:
                 self.err(err)
         else:
@@ -188,7 +189,7 @@ class ControllerUnsafe(ControllerBase):
         if (x_loc, y_loc) != (x_, y_):
             self.dragging = True
             color = self.rules.stones[x_loc][y_loc]
-            if color in ('B', 'W'):
+            if color in (B, W):
                 origin = self.kifu.locate(x_loc, y_loc).getmove()
                 dest = Move("tk", (color, x_, y_), number=origin.number)
                 if self._checkinsert(dest):
@@ -199,6 +200,7 @@ class ControllerUnsafe(ControllerBase):
                         self.kifu.relocate(origin, dest)
                         self.display.highlight(self.kifu.getmove_at(self.current_mn))
                         self.clickloc = x_, y_
+                        return origin, dest  # to be used by extending code
                     except StateError as se:
                         print se
                         self.err(se)
@@ -244,7 +246,7 @@ class ControllerUnsafe(ControllerBase):
                     self._select(lastmv)
                 else:
                     self._select()
-
+                return move  # to be used by extending code
             except StateError as se:
                 self.err(se)
 

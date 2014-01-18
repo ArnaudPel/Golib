@@ -1,6 +1,6 @@
 from threading import RLock
 from go.move import Move
-from golib_conf import gsize
+from golib_conf import gsize, B, W, E
 from go.stateerror import StateError
 
 
@@ -22,7 +22,7 @@ class RuleUnsafe(object):
 
     def __init__(self, listener=None):
         self.listener = listener
-        self.stones = [['E' for _ in range(gsize)] for _ in range(gsize)]
+        self.stones = [[E for _ in range(gsize)] for _ in range(gsize)]
         self.stones_buff = None
 
         self.deleted = []
@@ -128,7 +128,7 @@ class RuleUnsafe(object):
 
         """
         if move.get_coord("sgf") != ('-', '-'):
-            if self.stones_buff[move.x][move.y] == 'E':
+            if self.stones_buff[move.x][move.y] == E:
                 enem_color = enemy(move.color)
                 self.stones_buff[move.x][move.y] = move.color
                 # check if kill (attack advantage)
@@ -142,7 +142,7 @@ class RuleUnsafe(object):
                         if nblibs == 0:
                             for k, l in group:
                                 deleted.append(Move("tk", (enem_color, k, l)))
-                                self.stones_buff[k][l] = 'E'
+                                self.stones_buff[k][l] = E
                             safe = True  # killed at least one enemy
 
                 # check for ko rule
@@ -166,12 +166,12 @@ class RuleUnsafe(object):
     def _pop(self, move):
         if move.get_coord("sgf") != ('-', '-'):
             if self.stones_buff[move.x][move.y] == move.color:
-                self.stones_buff[move.x][move.y] = 'E'
+                self.stones_buff[move.x][move.y] = E
                 captured = self.deleted_buff.pop()
                 for mv in captured:
                     self.stones_buff[mv.x][mv.y] = mv.color
             else:
-                self.raisese("Empty" if self.stones_buff[move.x][move.y] == 'E' else "Wrong Color.")
+                self.raisese("Empty" if self.stones_buff[move.x][move.y] == E else "Wrong Color.")
         else:
             self.deleted_buff.pop()
 
@@ -185,14 +185,14 @@ class RuleUnsafe(object):
         """
         color = self.stones_buff[x][y]
         if _group is None:
-            assert color != 'E'
+            assert color != E
             _group = []
             _libs = []
         if (x, y) not in _group:
             _group.append((x, y))
             for x, y in connected(x, y):
                 neighcolor = self.stones_buff[x][y]
-                if neighcolor == 'E':
+                if neighcolor == E:
                     if (x, y) not in _libs:
                         _libs.append((x, y))
                 elif neighcolor == color:
@@ -210,12 +210,12 @@ class RuleUnsafe(object):
         for x in range(gsize):
             for y in range(gsize):
                 char = self[y][x]
-                string += char if char != 'E' else '~'
+                string += char if char != E else '~'
                 string += ' '
             string += "  ||  "
             for y in range(gsize):
                 char = self.stones_buff[y][x]
-                string += char if char != 'E' else '~'
+                string += char if char != E else '~'
                 string += ' '
             string += "\n"
         return string
@@ -286,10 +286,10 @@ def connected(x, y):
 
 
 def enemy(color):
-    if color == 'B':
-        return 'W'
-    elif color == 'W':
-        return 'B'
+    if color == B:
+        return W
+    elif color == W:
+        return B
     else:
         raise ValueError("No enemy for '{0}'".format(color))
 

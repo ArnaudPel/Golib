@@ -1,4 +1,4 @@
-from golib_conf import gsize
+from golib_conf import gsize, W, B
 
 __author__ = 'Kohistan'
 
@@ -92,10 +92,10 @@ class Move(object):
 
         """
         if 0 <= self.x and 0 <= self.y:
-            color = 0 if self.color == 'B' else gsize * gsize
+            color = 0 if self.color == B else gsize * gsize
             return self.x + gsize * self.y + color
         else:
-            return 2 * gsize * gsize + (1 if self.color == 'W' else 0)
+            return 2 * gsize * gsize + (1 if self.color == W else 0)
 
     def __repr__(self):
         # temporary changing type below during dev/debug can be useful
