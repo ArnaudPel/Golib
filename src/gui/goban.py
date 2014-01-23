@@ -6,6 +6,11 @@ __author__ = 'Kohistan'
 
 
 class Goban(Canvas):
+    """
+    The widget dedicated to the display of the goban and the stones.
+
+    """
+
     def __init__(self, master):
         Canvas.__init__(self, master, width=gsize * rwidth, height=gsize * rwidth)
         self.stones = mtx(gsize)
@@ -38,8 +43,8 @@ class Goban(Canvas):
 
     def stones_changed(self, grid):
         """
-        Update the display to match the color grid provided.
-        grid -- a matrix of colors.
+        Update the displayed stones to match the color grid provided.
+        grid -- a matrix of colors (B, W, or E).
 
         """
         for x in range(len(grid)):
@@ -102,6 +107,10 @@ tk_inv_colors = {W: "black", B: "white"}
 
 
 class Stone(object):
+    """
+    Store attributes related to a displayed stone. Location, tkindex, highlight status, selection status.
+
+    """
     def __init__(self, canvas, move, highlight=False, selected=False):
         self.goban = canvas
         self._move = move.copy()  # self.move location may be changed by Stone
@@ -179,24 +188,3 @@ class Stone(object):
 
     def copy(self):
         return Stone(self.goban, self._move, highlight=self._hl, selected=self.selected)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

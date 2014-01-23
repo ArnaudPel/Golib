@@ -1,7 +1,7 @@
 from threading import RLock
+from go.exceptions import StateError
 from go.move import Move
 from golib_conf import gsize, B, W, E
-from go.stateerror import StateError
 
 
 __author__ = 'Kohistan'
@@ -29,7 +29,7 @@ class RuleUnsafe(object):
         self.deleted_buff = None
 
         # the sequence of moves that brought to the current state.
-        # needed by in-sequence deletion algorithm, to replay subsequent moves.
+        # needed by in-sequence modification algorithm, to replay subsequent moves.
         self.history = []
         self.history_buff = None
 
@@ -56,7 +56,7 @@ class RuleUnsafe(object):
         self.__init__(listener=self.listener)
 
     def reset(self):
-        """ Go back to the last confirmed state. """
+        """ Rollback to the last confirmed state. """
         self.stones_buff = self.copystones()
         self.deleted_buff = list(self.deleted)
         self.history_buff = list(self.history)
@@ -86,10 +86,6 @@ class RuleUnsafe(object):
                 self.history_buff[i].number += 1
             self._forward(move)
 
-    def _forward(self, move):
-        for i in range(move.number - 1, len(self.history_buff)):
-            self._append(self.history_buff[i])
-
     def remove(self, move, reset=True):
         """
         Check if the move passed as argument can be undone. There is no notion of sequence.
@@ -114,6 +110,10 @@ class RuleUnsafe(object):
             for i in range(move.number-1, len(self.history_buff)):
                 self.history_buff[i].number -= 1
             self._forward(move)
+
+    def _forward(self, move):
+        for i in range(move.number - 1, len(self.history_buff)):
+            self._append(self.history_buff[i])
 
     def _rewind(self, move):
         i = -1
@@ -164,6 +164,10 @@ class RuleUnsafe(object):
             self.deleted_buff.append([])
 
     def _pop(self, move):
+        """
+        Pop the provided move. Update stones_buff, put back previously captured stones.
+
+        """
         if move.get_coord("sgf") != ('-', '-'):
             if self.stones_buff[move.x][move.y] == move.color:
                 self.stones_buff[move.x][move.y] = E

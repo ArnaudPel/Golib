@@ -22,11 +22,17 @@ class Move(object):
             ctuple = self.split_str(ctype, string)
 
         if ctuple is not None:
-            self.interpret(ctype, *ctuple)
+            self._interpret(ctype, *ctuple)
         else:
             raise TypeError("Please provide \"ctuple\" or \"string\" keyword argument")
 
-    def interpret(self, ctype, color, a, b):
+    def _interpret(self, ctype, color, a, b):
+        """
+        Set the coordinates of the move, by interpreting (a, b) based on ctype.
+        a, b -- the coordinates. their value depends on ctype.
+        ctype -- the coordinate type.
+
+        """
         self.color = color
         if ctype == "tk":
             self.x = a
@@ -59,6 +65,8 @@ class Move(object):
         Return coordinates of this move in the provided coordinate frame (ctype), as a tuple.
         Basically invert the conversion operated in __init__().
 
+        ctype -- the coordinate type.
+
         """
         if ctype == "tk":
             return self.x, self.y
@@ -73,6 +81,10 @@ class Move(object):
         return Move("tk", (self.color, self.x, self.y), number=self.number)
 
     def repr(self, ctype):
+        """
+        Express this move in the provided coordinate type.
+
+        """
         if 0 <= self.x:
             mvstr = "{0}{1}".format(*self.get_coord(ctype=ctype))
         else:

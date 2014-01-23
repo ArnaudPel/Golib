@@ -1,8 +1,8 @@
 from sys import stdout, stderr
 from ntpath import basename, dirname
 from threading import RLock
+from go.exceptions import StateError
 from go.move import Move
-from go.stateerror import StateError
 from golib_conf import rwidth, gsize, appname, B, W
 
 from go.rules import Rule, RuleUnsafe
@@ -94,7 +94,7 @@ class ControllerUnsafe(ControllerBase):
             self.input.mousein.bind("<ButtonRelease-1>", self._mouse_release)
             self.input.mousein.bind("<Button-2>", self._backward)
         except AttributeError as ae:
-            self.err("Some mouse actions could not be bound to User Interface.")
+            self.err("Some mouse actions could not be found.")
             self.err(ae)
 
         try:
@@ -109,7 +109,7 @@ class ControllerUnsafe(ControllerBase):
             self.input.keyin.bind("<Escape>", lambda _: self._select())
             self.input.keyin.bind("<Delete>", self._delete)
         except AttributeError as ae:
-            self.err("Some keys could not be bound to User Interface.")
+            self.err("Some keys could not be found.")
             self.err(ae)
 
         # dependency injection attempt
@@ -124,10 +124,14 @@ class ControllerUnsafe(ControllerBase):
             self.input.commands["end"] = lambda: self._goto(722)  # big overkill for any sane game
             self.input.commands["close"] = self._onclose
         except AttributeError as ae:
-            self.err("Some commands could not be bound to User Interface.")
+            self.err("Some commands could not be found.")
             self.err(ae)
 
     def _keypress(self, event):
+        """
+        Store the pressed key.
+
+        """
         if self.keydown != event.char:
             self.keydown = event.char
             if self.keydown in ('b', 'w'):
@@ -137,6 +141,10 @@ class ControllerUnsafe(ControllerBase):
             print "ignoring keypress"
 
     def _keyrelease(self, _):
+        """
+        Set pressed key to None.
+
+        """
         if self.keydown in ('b', 'w'):
             self.log_mn()
         self.keydown = None
@@ -152,8 +160,9 @@ class ControllerUnsafe(ControllerBase):
 
     def _mouse_release(self, event):
         """
-        Internal function to add a move to the kifu and display it. The move
-        is expressed via a mouse click.
+        Append / Insert a move if the mouse has been released at the same location it has been pressed.
+        Do nothing otherwise (the relocation is handled in _drag()).
+
         """
         x, y = getxy(event)
         if not self.dragging:
@@ -182,6 +191,10 @@ class ControllerUnsafe(ControllerBase):
             self.dragging = False
 
     def _drag(self, event):
+        """
+        Handle a stone dragged by the user, and update self.kifu accordingly.
+
+        """
         x_ = event.x / rwidth
         y_ = event.y / rwidth
         x_loc = self.clickloc[0]
@@ -220,7 +233,8 @@ class ControllerUnsafe(ControllerBase):
     def _backward(self, event=None):
 
         """
-        Internal function to undo the last move made on the goban.
+        Point the rule structure to the previous move. The current move will still be in the game, and can be accessed
+        again by _forward().
         """
         if 0 < self.current_mn:
             try:
@@ -232,6 +246,11 @@ class ControllerUnsafe(ControllerBase):
                 self.err(se)
 
     def _delete(self, _):
+        """
+        Delete the selected move from the game. It will no longer appear in the sequence and will be erased from
+        sgf file if saved.
+
+        """
         if self.selected is not None:
             try:
                 move = self.kifu.locate(*self.selected, upbound=self.current_mn).getmove()
@@ -325,6 +344,11 @@ class ControllerUnsafe(ControllerBase):
             self.log("Saving cancelled")
 
     def _select(self, move=None):
+        """
+        Call with an argument to display the move as selected.
+        Call without argument to reset selection.
+
+        """
         if move:
             self.selected = move.x, move.y
             self.display.select(move)

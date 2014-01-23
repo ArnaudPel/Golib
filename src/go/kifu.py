@@ -1,7 +1,7 @@
 from sys import stdout
 from golib_conf import gsize, B, W
-from go.sgfck import CollectionGl, GameTreeGl, NodeGl, Parser
-from go.sgfwarning import SgfWarning
+from go.sgf_ck import CollectionGl, GameTreeGl, NodeGl, Parser
+from go.exceptions import SgfWarning
 
 __author__ = 'Kohistan'
 
@@ -28,11 +28,19 @@ class Kifu:
         self.modified = False
 
     def append(self, move):
+        """
+        Append the move at the end of the game.
+
+        """
         node = self._prepare(move)
         self.game.nodes.append(node)
         self.modified = True
 
     def insert(self, move, number):
+        """
+        Insert the move at the provided move number. Subsequent moves have their number incremented by one.
+
+        """
         node = self._prepare(move)
         node.number(number)
 
@@ -58,6 +66,10 @@ class Kifu:
         self.modified = True
 
     def relocate(self, origin, dest):
+        """
+        Change the coordinates of "origin" to those of "dest". The move number is not changed.
+
+        """
         node = self.locate(origin.x, origin.y)
         a, b = dest.get_coord("sgf")
         node.properties[origin.color] = [a + b]
@@ -127,6 +139,11 @@ class Kifu:
                 return self[i]
 
     def contains_pos(self, x, y, start=0):
+        """
+        Return the index of the first node containing a move placed at the provided coordinates.
+        start -- the index where to start search (inclusive)
+
+        """
         for i in range(start, len(self)):
             mv = self[i].getmove()
             if (mv.x == x) and (mv.y == y):
@@ -156,6 +173,10 @@ class Kifu:
             return B  # probably the beginning of the game
 
     def save(self):
+        """
+        Save to file.
+
+        """
         if self.sgffile is not None:
             with open(self.sgffile, 'w') as f:
                 self.game.output(f)
@@ -247,34 +268,3 @@ class Kifu:
         else:
             self._new()
             log("Opened new game")
-
-
-if __name__ == '__main__':
-    colors = [B, W]
-    kifu = Kifu()
-    previous = kifu.game.nodes[-1]
-    for i in range(gsize):
-        nod = NodeGl(kifu.game, previous)
-        nod.properties[colors[i % 2]] = [chr(i + 97) + chr(i + 97)]
-        kifu.game.nodes.append(nod)
-        previous = nod
-
-    f_out = file("/Users/Kohistan/Documents/go/Perso Games/updated.sgf", 'w')
-    kifu.game.parent.output(f_out)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -25,6 +25,11 @@ else:
 
 
 class UI(Frame):
+    """
+    The top level GUI.
+
+    """
+
     def __init__(self, master, origin=(0, 0)):
         Frame.__init__(self, master)
         self.origin = origin
@@ -160,12 +165,3 @@ class UI(Frame):
 
     def title(self, title):
         self._root().title(title)
-
-
-
-
-
-
-
-
-
