@@ -13,7 +13,7 @@ from go.exceptions import SgfWarning
 from string import join
 
 
-__author__ = 'Kohistan'
+__author__ = 'Arnaud Peloquin'
 
 """
 Extensions of Tauber's SGF, in order not to mix codes. This mostly consists in adds, plus a few overrides.

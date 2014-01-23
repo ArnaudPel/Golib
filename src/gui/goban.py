@@ -2,7 +2,7 @@ from Tkinter import Canvas
 from go.move import Move
 from golib_conf import gsize, rwidth, B, W, E
 
-__author__ = 'Kohistan'
+__author__ = 'Arnaud Peloquin'
 
 
 class Goban(Canvas):

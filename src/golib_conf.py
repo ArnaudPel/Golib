@@ -1,4 +1,4 @@
-__author__ = 'Kohistan'
+__author__ = 'Arnaud Peloquin'
 
 # the goban size (number of lines)
 gsize = 19

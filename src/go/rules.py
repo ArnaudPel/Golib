@@ -4,7 +4,7 @@ from go.move import Move
 from golib_conf import gsize, B, W, E
 
 
-__author__ = 'Kohistan'
+__author__ = 'Arnaud Peloquin'
 
 """
 Hold the state of a game, and ensure logical consistency of changes made to that state.

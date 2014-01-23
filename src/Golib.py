@@ -5,7 +5,7 @@ import platform
 from gui.controller import Controller
 from gui.ui import UI
 
-__author__ = 'Kohistan'
+__author__ = 'Arnaud Peloquin'
 
 """
 Application entry point.

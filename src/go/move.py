@@ -1,6 +1,6 @@
 from golib_conf import gsize, W, B
 
-__author__ = 'Kohistan'
+__author__ = 'Arnaud Peloquin'
 
 
 class Move(object):

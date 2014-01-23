@@ -9,7 +9,7 @@ from go.rules import Rule, RuleUnsafe
 from go.kifu import Kifu
 
 
-__author__ = 'Kohistan'
+__author__ = 'Arnaud Peloquin'
 
 
 class ControllerBase(object):
@@ -397,7 +397,9 @@ class Controller(ControllerUnsafe):
         super(Controller, self).__init__(user_input, display, sgffile)
         self.rlock = RLock()
 
-        # todo lock methods used by vision
+    def _append(self, move):
+        with self.rlock:
+            super(Controller, self)._append(move)
 
 
 def getxy(click):

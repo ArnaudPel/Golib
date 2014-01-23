@@ -3,7 +3,7 @@ from golib_conf import gsize, B, W
 from go.sgf_ck import CollectionGl, GameTreeGl, NodeGl, Parser
 from go.exceptions import SgfWarning
 
-__author__ = 'Kohistan'
+__author__ = 'Arnaud Peloquin'
 
 
 class Kifu:

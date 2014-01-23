@@ -11,7 +11,7 @@ from golib_conf import appname
 from gui.goban import Goban
 
 
-__author__ = 'Kohistan'
+__author__ = 'Arnaud Peloquin'
 
 """
 The main user interface.
@@ -52,7 +52,6 @@ class UI(Frame):
         self.commands["close"] = lambda: self.master.quit()  # this command needs a default value
 
         # delegate some work to goban
-        # todo make that a bit more generic, using registration or something
         self.stones_changed = self.goban.stones_changed
         self.highlight = self.goban.highlight
         self.select = self.goban.select
