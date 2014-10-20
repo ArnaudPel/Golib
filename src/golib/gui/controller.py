@@ -1,12 +1,12 @@
 from sys import stdout, stderr
 from ntpath import basename, dirname
 from threading import RLock
-from go.exceptions import StateError
-from go.move import Move
-from golib_conf import rwidth, gsize, appname, B, W
 
-from go.rules import Rule, RuleUnsafe
-from go.kifu import Kifu
+from golib.model.exceptions import StateError
+from golib.model.move import Move
+from golib.config.golib_conf import rwidth, gsize, appname, B, W
+from golib.model.rules import Rule, RuleUnsafe
+from golib.model.kifu import Kifu
 
 
 __author__ = 'Arnaud Peloquin'

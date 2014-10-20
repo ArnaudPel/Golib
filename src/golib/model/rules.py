@@ -1,7 +1,8 @@
 from threading import RLock
-from go.exceptions import StateError
-from go.move import Move
-from golib_conf import gsize, B, W, E
+
+from golib.model.exceptions import StateError
+from golib.model.move import Move
+from golib.config.golib_conf import gsize, B, W, E
 
 
 __author__ = 'Arnaud Peloquin'

@@ -1,6 +1,8 @@
 from Tkinter import Canvas
-from go.move import Move
-from golib_conf import gsize, rwidth, B, W, E
+
+from golib.model.move import Move
+from golib.config.golib_conf import gsize, rwidth, B, W, E
+
 
 __author__ = 'Arnaud Peloquin'
 

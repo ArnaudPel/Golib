@@ -1,7 +1,9 @@
 from sys import stdout
-from golib_conf import gsize, B, W
-from go.sgf_ck import CollectionGl, GameTreeGl, NodeGl, Parser
-from go.exceptions import SgfWarning
+
+from golib.config.golib_conf import gsize, B, W
+from golib.model.sgf_ck import CollectionGl, GameTreeGl, NodeGl, Parser
+from golib.model.exceptions import SgfWarning
+
 
 __author__ = 'Arnaud Peloquin'
 

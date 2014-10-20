@@ -1,4 +1,4 @@
-from golib_conf import gsize, W, B
+from golib.config.golib_conf import gsize, W, B
 
 __author__ = 'Arnaud Peloquin'
 

@@ -6,9 +6,9 @@ from tkMessageBox import askokcancel
 from tkSimpleDialog import askinteger
 from traceback import print_exc
 from ttk import Frame, Button
-from golib_conf import appname
 
-from gui.goban import Goban
+from golib.config.golib_conf import appname
+from golib.gui.goban import Goban
 
 
 __author__ = 'Arnaud Peloquin'

@@ -1,16 +1,16 @@
+import golib.model.sgf as sgf
 # little hack to force Tauber's sgf extensibility.
-import go.sgf
-go.sgf.createtree = lambda parent, parser=None: GameTreeGl(parent, parser=parser)
-go.sgf.createnode = lambda parent, previous, parser=None: NodeGl(parent, previous, parser=parser)
+sgf.createtree = lambda parent, parser=None: GameTreeGl(parent, parser=parser)
+sgf.createnode = lambda parent, previous, parser=None: NodeGl(parent, previous, parser=parser)
 # end of little hack :)
 
 
-from golib_conf import B, W
-from go.sgf import Collection, GameTree, Node, Parser
-from go.move import Move
-from go.exceptions import SgfWarning
-
 from string import join
+
+from golib.config.golib_conf import B, W
+from golib.model.sgf import Collection, GameTree, Node, Parser
+from golib.model.move import Move
+from golib.model.exceptions import SgfWarning
 
 
 __author__ = 'Arnaud Peloquin'

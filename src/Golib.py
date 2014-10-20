@@ -2,8 +2,10 @@ from Tkinter import Tk
 import argparse
 import os
 import platform
-from gui.controller import Controller
-from gui.ui import UI
+
+from golib.gui.controller import Controller
+from golib.gui.ui import UI
+
 
 __author__ = 'Arnaud Peloquin'
 
