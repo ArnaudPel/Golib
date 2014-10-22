@@ -74,7 +74,7 @@ class ControllerUnsafe(ControllerBase):
         self.dragging = False
         self.selected = None
 
-        # temporary log implementation that will changed for a more decent pattern
+        # temporary log implementation that should be changed for a more decent pattern
         self.log = self.display.message
         self.err = self.display.error
 

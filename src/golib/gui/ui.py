@@ -46,7 +46,8 @@ class UI(Frame):
         self.mousein = self.goban
         self.keyin = self.goban
 
-        # these are expected to be set from outside, in an attempt to inject dependency via setter
+        # these commands are expected to be set from outside, in an attempt to inject dependency via setter.
+        # See 'controller' classes who instantiate some of these commands.
         self.commands = {}
         self.master.protocol("WM_DELETE_WINDOW", lambda: self.execute("close"))
         self.commands["close"] = lambda: self.master.quit()  # this command needs a default value
