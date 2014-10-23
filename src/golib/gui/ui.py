@@ -1,11 +1,11 @@
-from Tkconstants import N
+from tkinter.constants import N
 from platform import system
-from tkFileDialog import asksaveasfilename, askopenfilename
-from Tkinter import Misc, StringVar, Label, Menu
-from tkMessageBox import askokcancel
-from tkSimpleDialog import askinteger
+from tkinter.filedialog import asksaveasfilename, askopenfilename
+from tkinter import Misc, StringVar, Label, Menu
+from tkinter.messagebox import askokcancel
+from tkinter.simpledialog import askinteger
 from traceback import print_exc
-from ttk import Frame, Button
+from tkinter.ttk import Frame, Button
 
 from golib.config.golib_conf import appname
 from golib.gui.goban import Goban
@@ -132,7 +132,7 @@ class UI(Frame):
         try:
             self.commands[command]()
         except KeyError:
-            print "No \"{0}\" command set, ignoring.".format(command)
+            print("No \"{0}\" command set, ignoring.".format(command))
         except Exception:
             # keep going
             print_exc()

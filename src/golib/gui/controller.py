@@ -55,7 +55,7 @@ class ControllerBase(object):
             self.log("Move {0} / {1}".format(self.current_mn, self.kifu.lastmove().number))
 
     def printself(self, _):
-        print self.rules
+        print(self.rules)
 
 
 class ControllerUnsafe(ControllerBase):
@@ -138,7 +138,7 @@ class ControllerUnsafe(ControllerBase):
                 color = "Black" if self.keydown == 'b' else "White"
                 self.log("Insert {0} stone as move {1}".format(color, self.current_mn + 1))
         else:
-            print "ignoring keypress"
+            print("ignoring keypress")
 
     def _keyrelease(self, _):
         """
@@ -215,7 +215,7 @@ class ControllerUnsafe(ControllerBase):
                         self.clickloc = x_, y_
                         return origin, dest  # to be used by extending code
                     except StateError as se:
-                        print se
+                        print(se)
                         self.err(se)
 
     def _forward(self, event=None):

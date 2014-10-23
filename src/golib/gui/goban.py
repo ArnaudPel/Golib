@@ -1,4 +1,4 @@
-from Tkinter import Canvas
+from tkinter import Canvas
 
 from golib.model.move import Move
 from golib.config.golib_conf import gsize, rwidth, B, W, E

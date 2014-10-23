@@ -183,7 +183,7 @@ class Kifu:
             with open(self.sgffile, 'w') as f:
                 self.game.output(f)
                 self.modified = False
-                print "Game saved to: " + self.sgffile
+                print("Game saved to: " + self.sgffile)
         else:
             raise SgfWarning("No file defined, can't save.")
 

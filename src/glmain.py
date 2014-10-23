@@ -1,4 +1,4 @@
-from Tkinter import Tk
+from tkinter import Tk
 import argparse
 import os
 import platform
