@@ -28,12 +28,12 @@ def center(win):
     """
     # Apparently a common hack to get the window size. Temporarily hide the
     # window to avoid update_idletasks() drawing the window in the wrong position.
-    root.withdraw()
-    root.update_idletasks()  # Update "requested size" from geometry manager
-    x = (root.winfo_screenwidth() - root.winfo_reqwidth()) / 2
-    y = (root.winfo_screenheight() - root.winfo_reqheight()) / 2
-    root.geometry("+%d+%d" % (x, y))
-    root.deiconify()
+    win.withdraw()
+    win.update_idletasks()  # Update "requested size" from geometry manager
+    x = (win.winfo_screenwidth() - win.winfo_reqwidth()) / 2
+    y = (win.winfo_screenheight() - win.winfo_reqheight()) / 2
+    win.geometry("+%d+%d" % (x, y))
+    win.deiconify()
 
 if __name__ == '__main__':
     root = Tk()
