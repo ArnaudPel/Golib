@@ -5,8 +5,6 @@ sgf.createnode = lambda parent, previous, parser=None: NodeGl(parent, previous, 
 # end of little hack :)
 
 
-from string import join
-
 from golib.config.golib_conf import B, W
 from golib.model.sgf import Collection, GameTree, Node, Parser
 from golib.model.move import Move
@@ -70,9 +68,9 @@ class NodeGl(Node):
             for value in self.properties[prop]:
                 if type(value) is not int:
                     if "\\" in value:
-                        value = join(value.split("\\"), "\\\\")
+                        value = "\\\\".join(value.split("\\"))
                     if "]" in value:
-                        value = join(value.split("]"), "\]")
+                        value = "\]".join(value.split("]"))
                 f.write("[%s]" % value)
             f.write("\n")
 

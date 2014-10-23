@@ -167,13 +167,13 @@ class Node:
 
     def output(self, f):
         f.write(";")
-        for property in self.properties.keys():
-            f.write(property)
-            for value in self.properties[property]:
+        for prop in self.properties.keys():
+            f.write(prop)
+            for value in self.properties[prop]:
                 if "\\" in value:
-                    value = string.join(value.split("\\"), "\\\\")
+                    value = "\\\\".join(value.split("\\"))
                 if "]" in value:
-                    value = string.join(value.split("]"), "\]")
+                    value = "\]".join(value.split("]"))
                 f.write("[%s]" % value)
 
 
@@ -225,7 +225,7 @@ class Parser:
                     self.start_node()
                     state = 2
                 else:
-                    raise ParseException, (ch, state)
+                    raise ParseException(ch, state)
             elif state == 2:
                 if whitespace(ch):
                     state = 2
@@ -245,7 +245,7 @@ class Parser:
                     self.end_gametree()
                     state = 4
                 else:
-                    raise ParseException, (ch, state)
+                    raise ParseException(ch, state)
             elif state == 3:
                 if ucletter(ch):
                     prop_ident = prop_ident + ch
@@ -257,7 +257,7 @@ class Parser:
                     prop_value = ""
                     state = 5
                 else:
-                    raise ParseException, (ch, state)
+                    raise ParseException(ch, state)
             elif state == 4:
                 if ch == ")":
                     self.end_gametree()
@@ -268,7 +268,7 @@ class Parser:
                     self.start_gametree()
                     state = 1
                 else:
-                    raise ParseException, (ch, state)
+                    raise ParseException(ch, state)
             elif state == 5:
                 if ch == "\\":
                     state = 6
@@ -306,10 +306,10 @@ class Parser:
                     self.start_gametree()
                     state = 1
                 else:
-                    raise ParseException, (ch, state)
+                    raise ParseException(ch, state)
             else:
-                raise ParseException, (ch, state)
+                raise ParseException(ch, state)
                 pass
 
         if state != 4:
-            raise ParseException, (ch, state)
+            raise ParseException(ch, state)

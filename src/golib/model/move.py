@@ -35,8 +35,8 @@ class Move(object):
         """
         self.color = color
         if ctype == "tk":
-            self.x = a
-            self.y = b
+            self.x = int(a)
+            self.y = int(b)
         elif ctype == "sgf":
             self.x = ord(a) - 97
             self.y = ord(b) - 97

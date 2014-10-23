@@ -26,13 +26,14 @@ def center(win):
     From stackoverflow, used to center app on screen
 
     """
-    win.update_idletasks()
-    width = win.winfo_width()
-    height = win.winfo_height()
-    x = (win.winfo_screenwidth() / 2) - (width / 2)
-    y = (win.winfo_screenheight() / 2) - (height / 2)
-    win.geometry('{0}x{1}+{2}+{3}'.format(width, height, x, y))
-
+    # Apparently a common hack to get the window size. Temporarily hide the
+    # window to avoid update_idletasks() drawing the window in the wrong position.
+    root.withdraw()
+    root.update_idletasks()  # Update "requested size" from geometry manager
+    x = (root.winfo_screenwidth() - root.winfo_reqwidth()) / 2
+    y = (root.winfo_screenheight() - root.winfo_reqheight()) / 2
+    root.geometry("+%d+%d" % (x, y))
+    root.deiconify()
 
 if __name__ == '__main__':
     root = Tk()

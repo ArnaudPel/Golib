@@ -253,7 +253,7 @@ class Kifu:
             log = lambda msg: stdout.write(str(msg) + "\n")
         if filepath is not None:
             try:
-                with file(filepath) as f:
+                with open(filepath) as f:
                     parser = Parser()
                     sgf_string = f.read()
                     f.close()
