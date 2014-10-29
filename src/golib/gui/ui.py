@@ -1,7 +1,7 @@
 from tkinter.constants import N
 from platform import system
 from tkinter.filedialog import asksaveasfilename, askopenfilename
-from tkinter import Misc, StringVar, Label, Menu
+from tkinter import StringVar, Label, Menu
 from tkinter.messagebox import askokcancel
 from tkinter.simpledialog import askinteger
 from traceback import print_exc
@@ -122,11 +122,6 @@ class UI(Frame):
 
         # display the menu
         self._root().config(menu=self.menubar)
-
-    def close(self, _):
-        self.closed = True
-        self.goban.closed = True
-        Misc.quit(self)
 
     def execute(self, command):
         try:

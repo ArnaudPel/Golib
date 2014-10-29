@@ -2,6 +2,7 @@ from tkinter import Tk
 import argparse
 import os
 import platform
+from golib.config.golib_conf import glocation
 
 from golib.gui.controller import Controller
 from golib.gui.ui import UI
@@ -35,6 +36,14 @@ def center(win):
     win.geometry("+%d+%d" % (x, y))
     win.deiconify()
 
+
+def place(win):
+    if glocation is None:
+        center(win)
+    else:
+        win.geometry("+%d+%d" % glocation)
+
+
 if __name__ == '__main__':
     root = Tk()
     app = UI(root)
@@ -47,5 +56,5 @@ if __name__ == '__main__':
     if "Darwin" in platform.system():
         os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "Python" to true' ''')
 
-    center(root)
+    place(root)
     root.mainloop()
