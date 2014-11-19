@@ -140,11 +140,11 @@ class UI(Frame):
     def error(self, msg):
         self.err.set(msg)
 
-    def promptopen(self, filetypes=None):
+    def promptopen(self, filetypes=None, title="Open"):
         if filetypes:
-            return askopenfilename(filetypes=filetypes)
+            return askopenfilename(title=title, filetypes=filetypes)
         else:
-            return askopenfilename()
+            return askopenfilename(title=title)
 
     def promptdiscard(self, title="Unsaved changes"):
         msg = "Discard unsaved changes in current game ?"

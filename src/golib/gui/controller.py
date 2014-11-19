@@ -114,7 +114,7 @@ class ControllerUnsafe(ControllerBase):
 
         # dependency injection attempt
         try:
-            self.input.commands["new"] = self._new
+            self.input.commands["new"] = self._newsgf
             self.input.commands["open"] = self._opensgf
             self.input.commands["save"] = self._save
             self.input.commands["delete"] = self._delete
@@ -307,14 +307,21 @@ class ControllerUnsafe(ControllerBase):
         self._select(move)
 
     def _opensgf(self):
-        if not self.kifu.modified or self.display.promptdiscard(title="Open sgf"):
-            sfile = self.display.promptopen(filetypes=[("Smart Game Format", "sgf")])
+        if not self.kifu.modified or self.display.promptdiscard(title="Discard current sgf"):
+            dialog_title = "Open sgf (Cancel to open a blank SGF)"
+            sfile = self.display.promptopen(title=dialog_title, filetypes=[("Smart Game Format", "sgf")])
             if len(sfile):
                 self.loadkifu(sfile)
+                return True
             else:
                 self.log("Opening sgf cancelled")
+                return False
 
-    def _new(self):
+    def _newsgf(self):
+        """
+        Discard the current kifu and open a new one (with the agreement of the user).
+
+        """
         if not self.kifu.modified or self.display.promptdiscard(title="Open new game"):
             self.loadkifu()
             self.log("New game")
