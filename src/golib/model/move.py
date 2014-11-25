@@ -24,7 +24,7 @@ class Move(object):
         if ctuple is not None:
             self._interpret(ctype, *ctuple)
         else:
-            raise TypeError("Please provide \"ctuple\" or \"string\" keyword argument")
+            raise TypeError("Please provide one of the two keyword argument: ctuple= or string=")
 
     def _interpret(self, ctype, color, a, b):
         """
@@ -43,7 +43,7 @@ class Move(object):
         elif ctype == "cv":
             self.x = b
             self.y = a
-        elif ctype == "kgs":
+        elif ctype == "kgs":  # kgs GUI: ranging from A1 to T19  (careful : the 'I' letter is omitted)
             self.x = ord(a) - (65 if ord(a) < 73 else 66)
             self.y = gsize - int(b)
         else:

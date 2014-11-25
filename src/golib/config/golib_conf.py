@@ -4,7 +4,7 @@ __author__ = 'Arnaud Peloquin'
 gsize = 19
 
 # the location of the goban window on screen. can be None to automatically center, or a tuple with integer values
-glocation = (120, 200)
+glocation = (120, 40)
 
 # colors on the goban (black, white, empty)
 B = 'B'

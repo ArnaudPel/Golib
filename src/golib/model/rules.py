@@ -124,11 +124,12 @@ class RuleUnsafe(object):
 
     def _append(self, move):
         """
-        Append the provided move.
+        Append the provided move. Can only be B or W. To mark a position empty, remove().
         Update stones_buff, store potential captured stones, and check for suicide play.
 
         """
         if move.get_coord("sgf") != ('-', '-'):
+            assert move.color in (B, W)
             if self.stones_buff[move.x][move.y] == E:
                 enem_color = enemy(move.color)
                 self.stones_buff[move.x][move.y] = move.color
@@ -258,8 +259,11 @@ class Rule(RuleUnsafe):
 
     def confirm(self):
         """
-        Top level needs must also acquire a lock to wrap operation (e.g. put or remove) and confirmation.
-        Otherwise another thread can perform an operation, and reset the first operation.
+        See RuleUnsafe.confirm().
+
+        The caller should wrap the operations (e.g. put or remove) associated with this confirmation in a global lock.
+        Otherwise another thread may perform an operation, that would reset this thread's operation(s) before it can
+        confirm().
 
         """
         with self.rlock:
@@ -297,14 +301,3 @@ def enemy(color):
         return B
     else:
         raise ValueError("No enemy for '{0}'".format(color))
-
-
-
-
-
-
-
-
-
-
-

@@ -195,10 +195,10 @@ class ControllerUnsafe(ControllerBase):
         Handle a stone dragged by the user, and update self.kifu accordingly.
 
         """
-        x_ = event.x / rwidth
-        y_ = event.y / rwidth
-        x_loc = self.clickloc[0]
-        y_loc = self.clickloc[1]
+        x_ = int(event.x / rwidth)
+        y_ = int(event.y / rwidth)
+        x_loc = int(self.clickloc[0])
+        y_loc = int(self.clickloc[1])
         if (x_loc, y_loc) != (x_, y_):
             self.dragging = True
             color = self.rules.stones[x_loc][y_loc]
