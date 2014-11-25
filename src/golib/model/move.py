@@ -34,13 +34,13 @@ class Move(object):
 
         """
         self.color = color
-        if ctype == "tk":
+        if ctype == "tk":  # same as opencv library
             self.x = int(a)
             self.y = int(b)
         elif ctype == "sgf":
             self.x = ord(a) - 97
             self.y = ord(b) - 97
-        elif ctype == "cv":
+        elif ctype == "np":  # numpy
             self.x = b
             self.y = a
         elif ctype == "kgs":  # kgs GUI: ranging from A1 to T19  (careful : the 'I' letter is omitted)
@@ -68,11 +68,11 @@ class Move(object):
         ctype -- the coordinate type.
 
         """
-        if ctype == "tk":
+        if ctype == "tk":  # same as opencv library
             return self.x, self.y
         elif ctype == "sgf":
             return chr(self.x + 97), chr(self.y + 97)
-        elif ctype == "cv":
+        elif ctype == "np":  # numpy
             return self.y, self.x
         elif ctype == "kgs":
             return chr(self.x + (65 if self.x < 8 else 66)), gsize - self.y
@@ -113,7 +113,7 @@ class Move(object):
         # temporary changing type below during dev/debug can be useful
 
         # coord_type = "sgf"
-        # coord_type = "cv"
+        # coord_type = "np"
         coord_type = "kgs"
         # coord_type = "tk"
         return self.repr(coord_type)
