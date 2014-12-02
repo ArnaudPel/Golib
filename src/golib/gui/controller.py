@@ -52,7 +52,11 @@ class ControllerBase(object):
         if mv and (mv.get_coord("sgf") == ('-', '-')):
             self.log("{0} pass".format(mv.color))
         else:
-            self.log("Move {0} / {1}".format(self.current_mn, self.kifu.lastmove().number))
+            kifu_lastmove = self.kifu.lastmove()
+            total_moves = 0
+            if kifu_lastmove is not None:
+                total_moves = kifu_lastmove.number
+            self.log("Move {0} / {1}".format(self.current_mn, total_moves))
 
     def printself(self, _):
         print(self.rules)
