@@ -37,6 +37,7 @@ class RuleUnsafe(object):
         self.reset()  # initialize buffers
 
     def copystones(self):
+        # todo surround with lock (or at least analyse risks).
         return [list(self[row]) for row in range(gsize)]
 
     def confirm(self):
@@ -99,6 +100,7 @@ class RuleUnsafe(object):
 
         """
         assert 0 < move.number, "Cannot remove a null or negative move number."
+        assert move.color is not E,  "A move is either B or W."
         if reset:
             self.reset()
 

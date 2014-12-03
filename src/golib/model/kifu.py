@@ -131,6 +131,7 @@ class Kifu:
     def locate(self, x, y, upbound=None):
         """
         Return the node describing the given goban intersection, or None if the intersection is empty.
+        Performs a backward search starting at the end of the list , in order to have the stone currently on that location.
         @naive
 
         """
