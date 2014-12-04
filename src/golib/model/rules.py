@@ -37,7 +37,6 @@ class RuleUnsafe(object):
         self.reset()  # initialize buffers
 
     def copystones(self):
-        # todo surround with lock (or at least analyse risks).
         return [list(self[row]) for row in range(gsize)]
 
     def confirm(self):
@@ -248,7 +247,7 @@ class Rule(RuleUnsafe):
     """
 
     def __init__(self, listener=None):
-        super(Rule, self).__init__(listener=listener)
+        super().__init__(listener=listener)
         self.rlock = RLock()
 
     def put(self, move, reset=True):
@@ -257,7 +256,7 @@ class Rule(RuleUnsafe):
 
     def remove(self, move, reset=True):
         with self.rlock:
-            return super(Rule, self).remove(move, reset)
+            return super().remove(move, reset)
 
     def confirm(self):
         """
@@ -269,8 +268,14 @@ class Rule(RuleUnsafe):
 
         """
         with self.rlock:
-            return super(Rule, self).confirm()
+            return super().confirm()
 
+    def copystones(self):
+        if hasattr(self, "rlock"):
+            with self.rlock:
+                return super().copystones()
+        else:
+            return super().copystones()
 
 def connected(x, y):
     """
