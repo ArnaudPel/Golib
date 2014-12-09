@@ -1,10 +1,11 @@
 from sys import stdout, stderr
 from ntpath import basename, dirname
 from threading import RLock
+from time import sleep
 
 from golib.model.exceptions import StateError
 from golib.model.move import Move
-from golib.config.golib_conf import rwidth, gsize, appname, B, W
+from golib.config.golib_conf import rwidth, gsize, appname, B, W, E
 from golib.model.rules import Rule, RuleUnsafe
 from golib.model.kifu import Kifu
 
@@ -57,6 +58,23 @@ class ControllerBase(object):
             if kifu_lastmove is not None:
                 total_moves = kifu_lastmove.number
             self.log("Move {0} / {1}".format(self.current_mn, total_moves))
+
+    def is_empty_blocking(self, x, y, seconds=0.1):
+        """
+        Return True if the position is empty, false otherwise.
+
+        @warning This method makes the thread sleep as long as current move is not the last move. This limitation
+        is based on the fact that variations are not allowed, and the rules object is modified by browsing moves.
+        The caveat is that calling this method from the GUI thread while not being at the last move would most likely
+        freeze the GUI.
+
+        x, y -- interpreted in the tk coordinates frame (=opencv coordinates frame).
+        seconds -- the duration of one sleep iteration.
+
+        """
+        while not self.at_last_move():
+            sleep(seconds)
+        return self.rules[x][y] is E
 
     def printself(self, _):
         print(self.rules)
