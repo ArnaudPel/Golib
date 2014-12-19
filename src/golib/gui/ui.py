@@ -72,7 +72,7 @@ class UI(Frame):
         self.goban.grid(row=roff, column=coff)
         self.buttons.grid(row=roff, column=coff+1, sticky=N, pady=10)
 
-        b_delete = Button(self.buttons, text="Delete", command=lambda: self.execute("delete"))
+        b_delete = Button(self.buttons, text="Delete", command=lambda: self.execute("delselect"))
         # b_open = Button(self.buttons, text="Open", command=lambda: self.execute("open"))
         # b_save = Button(self.buttons, text="Save", command=lambda: self.execute("save"))
 

@@ -40,6 +40,62 @@ class ControllerBase(object):
         else:
             raise NotImplementedError("Variations not allowed yet. Hold 'b' or 'w' key + click to insert a move")
 
+    def _bulk_append(self, moves):
+        """
+        Bulk update of the goban with multiple moves, allowing for better performance (up to 2 global updates only of
+        structures for the whole bulk).
+
+        moves -- the list of moves to apply. those may be of color 'E', then meaning the removal of the
+        stone already present (an exception will most likely be raised if no stone is present when trying to delete).
+
+        """
+        order = {E: 0, B: 1, W: 1}  # keep B/W order, but removals must be performed and confirmed before appending
+        moves = sorted(moves, key=lambda m: order[m.color])
+        if self.at_last_move():
+            self.rules.reset()
+            i = 0
+            mv = moves[i]
+            while mv.color is E:
+                torem = self.kifu.locate(mv.x, mv.y).getmove()
+                self.rules.remove(torem, reset=False)
+                self.kifu.delete(torem)
+                self.current_mn -= 1
+                i += 1
+                if i < len(moves):
+                    mv = moves[i]
+                else:
+                    break
+            if i:
+                self.rules.confirm()  # save deletion changes
+            while i < len(moves):
+                assert mv.color in (B, W)
+                mv.number = self.current_mn + 1
+                self.rules.put(mv, reset=False)
+                self.kifu.append(mv)
+                self.current_mn += 1
+                i += 1
+                if i < len(moves):
+                    mv = moves[i]
+                else:
+                    break
+            self.rules.confirm()  # save addition changes
+            self.log_mn()
+        else:
+            raise NotImplementedError("Variations not allowed yet. Please navigate to end of game.")
+
+    def _delete(self, x, y):
+        """
+        Delete the selected move from the game. It will no longer appear in the sequence and will be erased from
+        sgf file if saved.
+
+        """
+        move = self.kifu.locate(x, y, upbound=self.current_mn).getmove()
+        self.rules.remove(move)
+        self.rules.confirm()
+        self.kifu.delete(move)
+        self._incr_move_number(step=-1)
+        return move  # to be used by extending code
+
     def _incr_move_number(self, step=1):
         self.current_mn += step
         self.log_mn()
@@ -129,7 +185,8 @@ class ControllerUnsafe(ControllerBase):
             self.input.keyin.bind("<p>", self.printself)
             self.input.keyin.bind("<g>", lambda _: self._goto(self.display.promptgoto()))
             self.input.keyin.bind("<Escape>", lambda _: self._select())
-            self.input.keyin.bind("<Delete>", self._delete)
+            self.input.keyin.bind("<Delete>", self._del_selected)
+            self.input.keyin.bind("<BackSpace>", self._del_selected)
         except AttributeError as ae:
             self.err("Some keys could not be found.")
             self.err(ae)
@@ -139,7 +196,7 @@ class ControllerUnsafe(ControllerBase):
             self.input.commands["new"] = self._newsgf
             self.input.commands["open"] = self._opensgf
             self.input.commands["save"] = self._save
-            self.input.commands["delete"] = self._delete
+            self.input.commands["delselect"] = self._del_selected
             self.input.commands["back"] = self._backward
             self.input.commands["forward"] = self._forward
             self.input.commands["beginning"] = lambda: self._goto(0)
@@ -267,29 +324,18 @@ class ControllerUnsafe(ControllerBase):
             except StateError as se:
                 self.err(se)
 
-    def _delete(self, _):
-        """
-        Delete the selected move from the game. It will no longer appear in the sequence and will be erased from
-        sgf file if saved.
-
-        """
-        if self.selected is not None:
-            try:
-                move = self.kifu.locate(*self.selected, upbound=self.current_mn).getmove()
-                self.rules.remove(move)
-                self.rules.confirm()
-                self.kifu.delete(move)
-                self._incr_move_number(step=-1)
-
+    def _del_selected(self, _):
+        try:
+            if self.selected is not None:
+                move = self._delete(*self.selected)
                 # point to next stone to delete, only if we are at the head
                 lastmv = self.kifu.lastmove()
                 if lastmv and move.number - 1 == lastmv.number:
                     self._select(lastmv)
                 else:
                     self._select()
-                return move  # to be used by extending code
-            except StateError as se:
-                self.err(se)
+        except StateError as se:
+            self.err(se)
 
     def _checkinsert(self, move):
         """
@@ -429,6 +475,10 @@ class Controller(ControllerUnsafe):
     def _append(self, move):
         with self.rlock:
             super(Controller, self)._append(move)
+
+    def _bulk_append(self, moves):
+        with self.rlock:
+            return super()._bulk_append(moves)
 
 
 def getxy(click):
