@@ -480,6 +480,10 @@ class Controller(ControllerUnsafe):
         with self.rlock:
             return super()._bulk_append(moves)
 
+    def _delete(self, x, y):
+        with self.rlock:
+            return super()._delete(x, y)
+
 
 def getxy(click):
     """
