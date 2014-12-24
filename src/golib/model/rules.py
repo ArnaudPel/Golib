@@ -56,6 +56,14 @@ class RuleUnsafe(object):
     def clear(self):
         self.__init__(listener=self.listener)
 
+    def copy(self):
+        copy = RuleUnsafe(listener=self.listener)
+        copy.stones = self.copystones()
+        copy.deleted = list(self.deleted)
+        copy.history = list(self.history)
+        copy.reset()
+        return copy
+
     def reset(self):
         """ Rollback to the last confirmed state. """
         self.stones_buff = self.copystones()

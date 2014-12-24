@@ -40,10 +40,10 @@ class ControllerBase(object):
         else:
             raise NotImplementedError("Variations not allowed yet. Hold 'b' or 'w' key + click to insert a move")
 
-    def _bulk_append(self, moves):
+    def _bulk_update(self, moves):
         """
         Bulk update of the goban with multiple moves, allowing for better performance (up to 2 global updates only of
-        structures for the whole bulk).
+        structures for the whole bulk). The update can consist of deletions and/or appends.
 
         moves -- the list of moves to apply. those may be of color 'E', then meaning the removal of the
         stone already present (an exception will most likely be raised if no stone is present when trying to delete).
@@ -51,35 +51,44 @@ class ControllerBase(object):
         """
         order = {E: 0, B: 1, W: 1}  # keep B/W order, but removals must be performed and confirmed before appending
         moves = sorted(moves, key=lambda m: order[m.color])
+        rule_save = self.rules.copy()  # to rollback if something goes wrong
+        kifu_save = self.kifu.copy()   # to rollback if something goes wrong
+        number_save = self.current_mn
         if self.at_last_move():
             self.rules.reset()
-            i = 0
-            mv = moves[i]
-            while mv.color is E:
-                torem = self.kifu.locate(mv.x, mv.y).getmove()
-                self.rules.remove(torem, reset=False)
-                self.kifu.delete(torem)
-                self.current_mn -= 1
-                i += 1
-                if i < len(moves):
-                    mv = moves[i]
-                else:
-                    break
-            if i:
-                self.rules.confirm()  # save deletion changes
-            while i < len(moves):
-                assert mv.color in (B, W)
-                mv.number = self.current_mn + 1
-                self.rules.put(mv, reset=False)
-                self.kifu.append(mv)
-                self.current_mn += 1
-                i += 1
-                if i < len(moves):
-                    mv = moves[i]
-                else:
-                    break
-            self.rules.confirm()  # save addition changes
-            self.log_mn()
+            try:
+                i = 0
+                mv = moves[i]
+                while mv.color is E:
+                    torem = self.kifu.locate(mv.x, mv.y).getmove()
+                    self.rules.remove(torem, reset=False)
+                    self.kifu.delete(torem)
+                    self.current_mn -= 1
+                    i += 1
+                    if i < len(moves):
+                        mv = moves[i]
+                    else:
+                        break
+                if i:
+                    self.rules.confirm()  # save deletion changes
+                while i < len(moves):
+                    assert mv.color in (B, W)
+                    mv.number = self.current_mn + 1
+                    self.rules.put(mv, reset=False)
+                    self.kifu.append(mv)
+                    self.current_mn += 1
+                    i += 1
+                    if i < len(moves):
+                        mv = moves[i]
+                    else:
+                        break
+                self.rules.confirm()  # save addition changes
+                self.log_mn()
+            except StateError as se:
+                self.rules = rule_save
+                self.kifu = kifu_save
+                self.current_mn = number_save
+                print("Bulk update failed: {}".format(se))
         else:
             raise NotImplementedError("Variations not allowed yet. Please navigate to end of game.")
 
@@ -504,9 +513,9 @@ class Controller(ControllerUnsafe):
         with self.rlock:
             super(Controller, self)._append(move)
 
-    def _bulk_append(self, moves):
+    def _bulk_update(self, moves):
         with self.rlock:
-            return super()._bulk_append(moves)
+            return super()._bulk_update(moves)
 
     def _delete(self, x, y):
         with self.rlock:

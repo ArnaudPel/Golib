@@ -29,6 +29,15 @@ class Kifu:
         self._parse(sgffile, log=log, err=err)
         self.modified = False
 
+    def copy(self):
+        # todo refactor this quick implementation to really copy nodes (as of now data is lost, eg. all non-move nodes)
+        copy = Kifu(log=lambda _: None)
+        copy.sgffile = self.sgffile
+        copy.modified = self.modified
+        for mv in self.get_move_seq():
+            copy.append(mv)
+        return copy
+
     def append(self, move):
         """
         Append the move at the end of the game.
