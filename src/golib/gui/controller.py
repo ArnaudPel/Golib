@@ -242,8 +242,7 @@ class ControllerUnsafe(ControllerBase):
         Handle a stone dragged by the user, and update self.kifu accordingly.
 
         """
-        x_ = int(event.x / rwidth)
-        y_ = int(event.y / rwidth)
+        x_, y_ = get_intersection(event)
         x_loc = int(self.clickloc[0])
         y_loc = int(self.clickloc[1])
         if (x_loc, y_loc) != (x_, y_):
@@ -333,20 +332,19 @@ class ControllerUnsafe(ControllerBase):
         # as the current stone may be captured before any conflict appears
         rule = RuleUnsafe()  # no need for thread safety here
 
-        # initialize rule object up to insert position
+        nr = 0
+        # initialize rule object up to insert position (excluded)
         for nr in range(1, self.current_mn + 1):
-            tempmv = self.kifu.getmove_at(nr)
-            rule.put(tempmv, reset=False)
-        rule.put(move, reset=False)
+            rule.put(self.kifu.getmove_at(nr), reset=False)
 
         # perform check
-        for nr in range(self.current_mn + 1, self.kifu.lastmove().number + 1):
-            tempmv = self.kifu.getmove_at(nr)
-            try:
-                rule.put(tempmv, reset=False)
-            except StateError as se:
-                self.err("Cannot insert move at %d: %s at move %d" % (self.current_mn, se, nr))
-                return False
+        try:
+            rule.put(move, reset=False)  # new move insertion
+            for nr in range(self.current_mn + 1, self.kifu.lastmove().number + 1):
+                rule.put(self.kifu.getmove_at(nr), reset=False)
+        except StateError as se:
+            self.err("Cannot insert %s at %d: %s at move %d" % (move.color, self.current_mn, se, nr))
+            return False
         return True
 
     def _incr_move_number(self, step=1, _=None):
