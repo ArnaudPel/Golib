@@ -14,6 +14,11 @@ class Move(object):
     """
 
     def __init__(self, ctype, ctuple=None, string=None, number=-1):
+        """
+        ctuple -- tuple(color, x, y)  where x and y are interpreted depending on the 'ctype' argument.
+        string -- if 'ctuple' is not provided, provide move data as a string, interpreted depending on 'ctype'.
+
+        """
         self.number = number
         self.color = None
         self.x = self.y = None

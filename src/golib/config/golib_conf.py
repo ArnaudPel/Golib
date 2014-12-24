@@ -11,7 +11,7 @@ B = 'B'
 W = 'W'
 E = 'E'
 
-# the number of pixels per row
+# the number of pixels per row in the tk display of the goban
 rwidth = 40
 
 # display name of the application

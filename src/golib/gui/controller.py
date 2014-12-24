@@ -6,7 +6,7 @@ from time import sleep
 from golib.model.exceptions import StateError
 from golib.model.move import Move
 from golib.config.golib_conf import rwidth, gsize, appname, B, W, E
-from golib.model.rules import Rule, RuleUnsafe
+from golib.model.rules import Rule, RuleUnsafe, enemy
 from golib.model.kifu import Kifu
 
 
@@ -167,17 +167,15 @@ class ControllerUnsafe(ControllerBase):
         Bind the action listeners.
         """
         try:
-            self.input.mousein.bind("<Button-1>", self._click)
+            self.input.mousein.bind("<Button-1>", self._lclick)
             self.input.mousein.bind("<B1-Motion>", self._drag)
             self.input.mousein.bind("<ButtonRelease-1>", self._mouse_release)
-            self.input.mousein.bind("<Button-2>", self._backward)
+            self.input.mousein.bind("<Button-2>", self._rclick)
         except AttributeError as ae:
             self.err("Some mouse actions could not be found.")
             self.err(ae)
 
         try:
-            self.input.keyin.bind("<Key>", self._keypress)
-            self.input.keyin.bind("<KeyRelease>", self._keyrelease)
             self.input.keyin.bind("<Right>", self._forward)
             self.input.keyin.bind("<Up>", self._forward)
             self.input.keyin.bind("<Left>", self._backward)
@@ -202,67 +200,37 @@ class ControllerUnsafe(ControllerBase):
             self.input.commands["beginning"] = lambda: self._goto(0)
             self.input.commands["end"] = lambda: self._goto(722)  # big overkill for any sane game
             self.input.commands["close"] = self._onclose
+            self.input.commands["insert"] = self._insert
+            self.input.commands["color"] = self.swap_color
         except AttributeError as ae:
             self.err("Some commands could not be found.")
             self.err(ae)
 
-    def _keypress(self, event):
-        """
-        Store the pressed key.
-
-        """
-        if self.keydown != event.char:
-            self.keydown = event.char
-            if self.keydown in ('b', 'w'):
-                color = "Black" if self.keydown == 'b' else "White"
-                self.log("Insert {0} stone as move {1}".format(color, self.current_mn + 1))
-        else:
-            print("ignoring keypress")
-
-    def _keyrelease(self, _):
-        """
-        Set pressed key to None.
-
-        """
-        if self.keydown in ('b', 'w'):
-            self.log_mn()
-        self.keydown = None
-
-    def _click(self, event):
+    def _lclick(self, event):
         """
         Internal function to select a move on click. Move adding is performed on mouse release.
 
         """
-        x, y = getxy(event)
+        x, y = get_intersection(event)
         self.clickloc = (x, y)
         self._select(Move("tk", ("Dummy", x, y)))
 
+    def _rclick(self, event):
+        x, y = get_intersection(event)
+        self.input.context_menu(event, self.rules[x][y] is not E)
+
     def _mouse_release(self, event):
         """
-        Append / Insert a move if the mouse has been released at the same location it has been pressed.
+        Append a move if the mouse has been released at the same location it has been pressed.
         Do nothing otherwise (the relocation is handled in _drag()).
 
         """
-        x, y = getxy(event)
+        x, y = get_intersection(event)
         if not self.dragging:
             move = Move("tk", (self.kifu.next_color(), x, y), number=self.current_mn + 1)
             try:
-                if self.keydown in ('b', 'w'):
-                    move.color = self.keydown.upper()
-                    # check for potential conflict:
-                    # forwarding can be blocked if we occupy a position already used later in game
-                    if self._checkinsert(move):
-                        self.rules.put(move)
-                        if 0 < self.current_mn:
-                            self.kifu.insert(move, self.current_mn + 1)
-                            self.rules.confirm()
-                            self._incr_move_number()
-                        else:
-                            self._append(move)
-                        self.rules.confirm()
-                else:
-                    self.rules.put(move)
-                    self._append(move)
+                self.rules.put(move)
+                self._append(move)
                 return move  # to be used by extending code
             except (StateError, NotImplementedError) as err:
                 self.err(err)
@@ -296,6 +264,22 @@ class ControllerUnsafe(ControllerBase):
                     except StateError as se:
                         print(se)
                         self.err(se)
+
+    def _insert(self, event, color):
+        """
+        Insert a new move in the line of play, right after the move number currently being displayed on the goban.
+        This insert may fail if it breaks the consistency of later moves (see Controller._checkinsert()).
+
+        """
+        x, y = get_intersection(event)
+        move = Move('tk', (color, x, y), number=self.current_mn + 1)
+        # check for potential conflict: browsing could be blocked if we occupy a position already used later in game
+        if self._checkinsert(move):
+            self.rules.put(move)
+            self.kifu.insert(move, self.current_mn + 1)
+            self.rules.confirm()
+            self._incr_move_number()
+            self.rules.confirm()
 
     def _forward(self, event=None):
         """
@@ -345,25 +329,24 @@ class ControllerUnsafe(ControllerBase):
         create severe problems (as of current implementation, forward navigation cannot go past the conflict).
 
         """
-        if self.kifu.contains_pos(move.x, move.y, start=self.current_mn):
-            # checking move presence in self.kifu is not enough,
-            # as the current stone may be captured before any conflict appears
-            rule = RuleUnsafe()  # no need for thread safety here
+        # checking move presence in self.kifu is not enough,
+        # as the current stone may be captured before any conflict appears
+        rule = RuleUnsafe()  # no need for thread safety here
 
-            # initialize rule object up to insert position
-            for nr in range(1, self.current_mn + 1):
-                tempmv = self.kifu.getmove_at(nr)
+        # initialize rule object up to insert position
+        for nr in range(1, self.current_mn + 1):
+            tempmv = self.kifu.getmove_at(nr)
+            rule.put(tempmv, reset=False)
+        rule.put(move, reset=False)
+
+        # perform check
+        for nr in range(self.current_mn + 1, self.kifu.lastmove().number + 1):
+            tempmv = self.kifu.getmove_at(nr)
+            try:
                 rule.put(tempmv, reset=False)
-            rule.put(move, reset=False)
-
-            # perform check
-            for nr in range(self.current_mn + 1, self.kifu.lastmove().number + 1):
-                tempmv = self.kifu.getmove_at(nr)
-                try:
-                    rule.put(tempmv, reset=False)
-                except StateError as se:
-                    self.err("Cannot insert move at %d: %s at move %d" % (self.current_mn, se, nr))
-                    return False
+            except StateError as se:
+                self.err("Cannot insert move at %d: %s at move %d" % (self.current_mn, se, nr))
+                return False
         return True
 
     def _incr_move_number(self, step=1, _=None):
@@ -460,6 +443,53 @@ class ControllerUnsafe(ControllerBase):
         if not self.kifu.modified or self.display.promptdiscard(title="Closing {0}".format(appname)):
             raise SystemExit(0)
 
+    def swap_color(self, event=None):
+        """
+        Get the stone corresponding to the click 'event' if any, and swap its color if possible.
+
+        """
+        x, y = get_intersection(event)
+        node = self.kifu.locate(x, y, upbound=self.current_mn)
+        if node is not None:
+            move = node.getmove()
+            move.color = enemy(move.color)
+            # now check that the insertion of that stone with the opposite color is not going to break anything
+            if self._check_update(move, message="Cannot swap color"):
+                self.rules.remove(node.getmove())
+                self.rules.put(move, reset=False)
+                self.rules.confirm()
+                self.kifu.update_mv(move, node)
+
+    def _check_update(self, move: Move, message: str="Cannot update move"):
+        """
+        Check the consistency of the whole game, after having taken into account the provided move update.
+
+        For example changing the color of a stone in the middle of the line play may cancel the killing of a group.
+        If stones had then been played in the "hole" created by that kill, tampering with it breaks the whole game
+        (basically, browsing can't go past the first conflicting location).
+
+        Return True if no problem is anticipated, False if the update should be refused. Note: no real action is taken.
+
+        """
+        rule = RuleUnsafe()
+        moves = self.kifu.get_move_seq()
+        try:
+            previous = moves[move.number - 1]  # move indexing is 1-based
+            assert previous.number == move.number
+            # assert (previous.x, previous.y) == (move.x, move.y)
+            moves[move.number - 1] = move
+        except AssertionError:
+            print("Unexpected kifu moves list in Controller.check_color_swap()")
+            return False
+        i = 0
+        try:
+            for i, mv in enumerate(moves):
+                rule.put(mv, reset=False)
+        except StateError as se:
+            self.err("{} {}: leads to {} at move {}".format(message, move.number, se, i))
+            return False
+        return True
+
 
 class Controller(ControllerUnsafe):
     """
@@ -485,12 +515,12 @@ class Controller(ControllerUnsafe):
             return super()._delete(x, y)
 
 
-def getxy(click):
+def get_intersection(click_event) -> (int, int):
     """
-    Convert the click location into goban coordinates.
+    Return the closest goban intersection from the click location.
     Return -- the goban's row and column indexes.
 
     """
-    x = click.x / rwidth
-    y = click.y / rwidth
+    x = int(click_event.x / rwidth)
+    y = int(click_event.y / rwidth)
     return max(0, min(x, gsize - 1)), max(0, min(y, gsize - 1))

@@ -99,6 +99,16 @@ class Kifu:
             self.game.nodes.remove(torem)
             self.modified = True
 
+    def update_mv(self, move, node=None):
+        if node is None:
+            node = self.locate(move.x, move.y)
+        for color in (B, W):
+            # delete previous move position
+            try: del node.properties[color]
+            except KeyError: pass
+        self._prepare(move, node=node)
+        self.modified = True
+
     def get_move_seq(self, first=1, last=1000):
         """
         Return the sub-sequence of moves of the main line of play, in a fresh list.
@@ -149,7 +159,7 @@ class Kifu:
         """
         for i in range(start, len(self)):
             mv = self[i].getmove()
-            if (mv.x == x) and (mv.y == y):
+            if (mv is not None) and (mv.x == x) and (mv.y == y):
                 return i
         return False
 
@@ -188,12 +198,13 @@ class Kifu:
         else:
             raise SgfWarning("No file defined, can't save.")
 
-    def _prepare(self, move):
+    def _prepare(self, move, node=None):
         """
-        Create a new node for the given move.
+        Create or update a node according to the provided move.
 
         """
-        node = NodeGl(self.game, self[-1])
+        if node is None:
+            node = NodeGl(self.game, self[-1])
         r, c = move.get_coord("sgf")
         node.properties[move.color] = [r + c]  # sgf properties are in a list
         node.number(nb=move.number)

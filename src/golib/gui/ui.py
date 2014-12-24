@@ -7,7 +7,7 @@ from tkinter.simpledialog import askinteger
 from traceback import print_exc
 from tkinter.ttk import Frame, Button
 
-from golib.config.golib_conf import appname
+from golib.config.golib_conf import appname, B, W
 from golib.gui.goban import Goban
 
 
@@ -35,6 +35,7 @@ class UI(Frame):
         self.origin = origin
         self.goban = Goban(self)
         self.buttons = Frame(self)
+        self.ctx_event = None  # save the event that has originated the context menu
         self.msg = StringVar(value="Hello")
         self.err = StringVar(value="-")
         self.create_menubar()
@@ -84,7 +85,6 @@ class UI(Frame):
         msglabel = Label(self, textvariable=self.msg)
         errlabel = Label(self, textvariable=self.err, fg="red")
 
-
         # position buttons on the buttons grid
         b_delete.grid(row=0, column=0, columnspan=2)
         # b_open.grid(row=1, column=0)
@@ -123,15 +123,30 @@ class UI(Frame):
         # display the menu
         self._root().config(menu=self.menubar)
 
-    def execute(self, command):
-        try:
-            self.commands[command]()
-        except KeyError:
+    def get_ctx_menu(self, event, occupied):
+        """
+        Create a contextual menu for the goban.
+
+        """
+        self.ctx_event = event
+        menu = Menu(self.master)
+        if occupied:
+            menu.add_command(label="Swap color", command=self.swap_color)
+        else:
+            menu.add_command(label="Insert B", command=lambda: self.insert(B))
+            menu.add_command(label="Insert W", command=lambda: self.insert(W))
+        return menu
+
+    def execute(self, command, *args):
+        if command in self.commands:
+            try:
+                self.commands[command](*args)
+            except Exception:
+                # keep going
+                print_exc()
+            self.goban.focus_set()
+        else:
             print("No \"{0}\" command set, ignoring.".format(command))
-        except Exception:
-            # keep going
-            print_exc()
-        self.goban.focus_set()
 
     # DISPLAY METHODS
     def message(self, msg):
@@ -157,6 +172,17 @@ class UI(Frame):
         number = askinteger("Jump", "Go to move")
         self.goban.focus_set()
         return number
+
+    def context_menu(self, event, occupied):
+        x = event.x + self.winfo_rootx()
+        y = event.y + self.winfo_rooty()
+        self.get_ctx_menu(event, occupied).post(x, y)
+
+    def insert(self, color):
+        self.execute("insert", self.ctx_event, color)
+
+    def swap_color(self):
+        self.execute("color", self.ctx_event)
 
     def title(self, title):
         self._root().title(title)
