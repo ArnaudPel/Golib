@@ -30,12 +30,28 @@ class Kifu:
         self.modified = False
 
     def copy(self):
-        # todo refactor this quick implementation to really copy nodes (as of now data is lost, eg. all non-move nodes)
         copy = Kifu(log=lambda _: None)
+        copy.game.nodes.clear()
         copy.sgffile = self.sgffile
         copy.modified = self.modified
-        for mv in self.get_move_seq():
-            copy.append(mv)
+        previous = None
+        for node in self:
+            ng = NodeGl(copy.game, previous)
+            ng.properties = {}
+            for k, v in node.properties.items():
+                if type(v) is list:
+                    ng.properties[k] = list(v)
+                else:
+                    ng.properties[k] = v
+            assert type(node.first) is int
+            ng.first = node.first
+            # no variations allowed yet, but that may have to be copied someday
+            # ng.previous_variation = node.previous_variation
+            # ng.variations = list(node.variations)
+            copy.game.nodes.append(ng)
+            if previous is not None:
+                previous.next = ng
+            previous = ng
         return copy
 
     def append(self, move):

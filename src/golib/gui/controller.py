@@ -51,10 +51,10 @@ class ControllerBase(object):
         """
         order = {E: 0, B: 1, W: 1}  # keep B/W order, but removals must be performed and confirmed before appending
         moves = sorted(moves, key=lambda m: order[m.color])
-        rule_save = self.rules.copy()  # to rollback if something goes wrong
-        kifu_save = self.kifu.copy()   # to rollback if something goes wrong
-        number_save = self.current_mn
         if self.at_last_move():
+            rule_save = self.rules.copy()  # to rollback if something goes wrong
+            kifu_save = self.kifu.copy()   # to rollback if something goes wrong
+            number_save = self.current_mn
             self.rules.reset()
             try:
                 i = 0
@@ -104,6 +104,17 @@ class ControllerBase(object):
         self.kifu.delete(move)
         self._incr_move_number(step=-1)
         return move  # to be used by extending code
+
+    def locate(self, x, y):
+        """
+        Look for a Move object having (x, y) location in the kifu.
+
+        x, y -- interpreted in the opencv (=tk) coordinates frame.
+
+        """
+        node = self.kifu.locate(x, y)
+        if node is not None:
+            return node.getmove()
 
     def _incr_move_number(self, step=1):
         self.current_mn += step
@@ -520,6 +531,14 @@ class Controller(ControllerUnsafe):
     def _delete(self, x, y):
         with self.rlock:
             return super()._delete(x, y)
+
+    def locate(self, x, y):
+        with self.rlock:
+            return super().locate(x, y)
+
+    def is_empty_blocking(self, x, y, seconds=0.1):
+        with self.rlock:
+            return super().is_empty_blocking(x, y, seconds)
 
 
 def get_intersection(click_event) -> (int, int):
