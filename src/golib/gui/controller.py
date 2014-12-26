@@ -164,7 +164,7 @@ class ControllerUnsafe(ControllerBase):
     """
 
     def __init__(self, user_input, display, sgffile=None):
-        super(ControllerUnsafe, self).__init__(None)  # use our own kifu loading
+        super().__init__(None)  # use our own kifu loading
         self.rules = Rule(listener=display)
         self.display = display
         self.input = user_input
@@ -368,11 +368,11 @@ class ControllerUnsafe(ControllerBase):
         return True
 
     def _incr_move_number(self, step=1, _=None):
-        super(ControllerUnsafe, self)._incr_move_number(step=step)
+        super()._incr_move_number(step=step)
         self.display.highlight(self.kifu.getmove_at(self.current_mn))
 
     def _append(self, move):
-        super(ControllerUnsafe, self)._append(move)
+        super()._append(move)
         self._select(move)
 
     def _opensgf(self):
@@ -517,12 +517,12 @@ class Controller(ControllerUnsafe):
     """
 
     def __init__(self, user_input, display, sgffile=None):
-        super(Controller, self).__init__(user_input, display, sgffile)
+        super().__init__(user_input, display, sgffile)
         self.rlock = RLock()
 
     def _append(self, move):
         with self.rlock:
-            super(Controller, self)._append(move)
+            super()._append(move)
 
     def _bulk_update(self, moves):
         with self.rlock:

@@ -260,7 +260,7 @@ class Rule(RuleUnsafe):
 
     def put(self, move, reset=True):
         with self.rlock:
-            return super(Rule, self).put(move, reset)
+            return super().put(move, reset)
 
     def remove(self, move, reset=True):
         with self.rlock:
