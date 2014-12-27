@@ -12,7 +12,7 @@ W = 'W'
 E = 'E'
 
 # the number of pixels per row in the tk display of the goban
-rwidth = 40
+rwidth = 30
 
 # display name of the application
 appname = "Golib"

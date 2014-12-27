@@ -1,7 +1,8 @@
 from tkinter import Canvas
 
 from golib.model.move import Move
-from golib.config.golib_conf import gsize, rwidth, B, W, E
+from golib.config import golib_conf as gc  # needed to dynamically read rwidth value
+from golib.config.golib_conf import gsize, B, W, E
 
 
 __author__ = 'Arnaud Peloquin'
@@ -14,7 +15,7 @@ class Goban(Canvas):
     """
 
     def __init__(self, master):
-        Canvas.__init__(self, master, width=gsize * rwidth, height=gsize * rwidth)
+        Canvas.__init__(self, master, width=gsize * gc.rwidth, height=gsize * gc.rwidth)
         self.stones = mtx(gsize)
         self.closed = False
         self._draw_board()
@@ -26,20 +27,20 @@ class Goban(Canvas):
         """
         self.configure(background="#F0CAA7")
         # vertical lines
-        offset = rwidth / 2
+        offset = gc.rwidth / 2
         for i in range(gsize):
-            x = i * rwidth + offset
-            self.create_line(x, offset, x, gsize * rwidth - offset)
+            x = i * gc.rwidth + offset
+            self.create_line(x, offset, x, gsize * gc.rwidth - offset)
             # horizontal lines
         for i in range(gsize):
-            y = i * rwidth + offset
-            self.create_line(offset, y, gsize * rwidth - offset, y)
+            y = i * gc.rwidth + offset
+            self.create_line(offset, y, gsize * gc.rwidth - offset, y)
             # hoshis
         for a in [3, 9, 15]:
             wid = 3
             for b in [3, 9, 15]:
-                xcenter = a * rwidth + rwidth / 2
-                ycenter = b * rwidth + rwidth / 2
+                xcenter = a * gc.rwidth + gc.rwidth / 2
+                ycenter = b * gc.rwidth + gc.rwidth / 2
                 oval = self.create_oval(xcenter - wid, ycenter - wid, xcenter + wid, ycenter + wid)
                 self.itemconfigure(oval, fill="black")
 
@@ -99,7 +100,7 @@ class Goban(Canvas):
 
 def mtx(size):
     """
-    Return a "square matrix" of the given size, made of lists of lists.
+    Return a "square matrix" of the given size, as a list of lists.
 
     """
     return [[None for _ in range(size)] for _ in range(size)]
@@ -119,7 +120,7 @@ class Stone(object):
         self._hl = highlight
         self.selected = selected
         self.tkindexes = []
-        self.border = 3
+        self.border = int(round(gc.rwidth / 10))
 
     def setpos(self, x, y):
         self._move.x = x
@@ -152,10 +153,10 @@ class Stone(object):
         x_ = self._move.x
         y_ = self._move.y
 
-        x0 = x_ * rwidth + self.border
-        y0 = y_ * rwidth + self.border
-        x1 = (x_ + 1) * rwidth - self.border
-        y1 = (y_ + 1) * rwidth - self.border
+        x0 = x_ * gc.rwidth + self.border
+        y0 = y_ * gc.rwidth + self.border
+        x1 = (x_ + 1) * gc.rwidth - self.border
+        y1 = (y_ + 1) * gc.rwidth - self.border
 
         oval_id = self.goban.create_oval(x0, y0, x1, y1)
         self.goban.itemconfigure(oval_id, fill=tkcolors[self._move.color])
@@ -165,10 +166,10 @@ class Stone(object):
         if self._hl:
             x_ = self._move.x
             y_ = self._move.y
-            x0 = x_ * rwidth + 5 * self.border
-            y0 = y_ * rwidth + 5 * self.border
-            x1 = (x_ + 1) * rwidth - 5 * self.border
-            y1 = (y_ + 1) * rwidth - 5 * self.border
+            x0 = (x_ + 1/2) * gc.rwidth - self.border
+            y0 = (y_ + 1/2) * gc.rwidth - self.border
+            x1 = (x_ + 1/2) * gc.rwidth + self.border
+            y1 = (y_ + 1/2) * gc.rwidth + self.border
 
             hl_id = self.goban.create_oval(x0, y0, x1, y1)
             self.goban.itemconfigure(hl_id, fill=tk_inv_colors[self._move.color])
@@ -179,10 +180,10 @@ class Stone(object):
             x_ = self._move.x
             y_ = self._move.y
 
-            x0 = x_ * rwidth
-            y0 = y_ * rwidth
-            x1 = (x_ + 1) * rwidth
-            y1 = (y_ + 1) * rwidth
+            x0 = x_ * gc.rwidth + self.border
+            y0 = y_ * gc.rwidth + self.border
+            x1 = (x_ + 1) * gc.rwidth - self.border
+            y1 = (y_ + 1) * gc.rwidth - self.border
 
             oval_id = self.goban.create_oval(x0, y0, x1, y1)
             self.goban.itemconfigure(oval_id, outline="red", width=self.border)

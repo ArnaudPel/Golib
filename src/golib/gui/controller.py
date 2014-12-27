@@ -5,7 +5,8 @@ from time import sleep
 
 from golib.model.exceptions import StateError
 from golib.model.move import Move
-from golib.config.golib_conf import rwidth, gsize, appname, B, W, E
+from golib.config import golib_conf  # needed to dynamically read rwidth value
+from golib.config.golib_conf import gsize, appname, B, W, E
 from golib.model.rules import Rule, RuleUnsafe, enemy
 from golib.model.kifu import Kifu
 
@@ -547,6 +548,6 @@ def get_intersection(click_event) -> (int, int):
     Return -- the goban's row and column indexes.
 
     """
-    x = int(click_event.x / rwidth)
-    y = int(click_event.y / rwidth)
+    x = int(click_event.x / golib_conf.rwidth)
+    y = int(click_event.y / golib_conf.rwidth)
     return max(0, min(x, gsize - 1)), max(0, min(y, gsize - 1))

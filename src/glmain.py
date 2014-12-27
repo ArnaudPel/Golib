@@ -2,8 +2,8 @@ from tkinter import Tk
 import argparse
 import os
 import platform
-from golib.config.golib_conf import glocation
 
+from golib.config.golib_conf import glocation, gsize
 from golib.gui.controller import Controller
 from golib.gui.ui import UI
 
@@ -44,8 +44,21 @@ def place(win):
         win.geometry("+%d+%d" % glocation)
 
 
+def configure(win):
+    """
+    Configure general GUI parameters based on the screen width
+
+    """
+    goban_height = win.winfo_screenheight() - 150  # leave some space for messages display at the bottom
+    goban_width = win.winfo_screenwidth() - 150    # leave some space for buttons on the left
+    from golib.config import golib_conf
+    golib_conf.rwidth = min(40, int(goban_height / gsize), int(goban_width / gsize))
+    print(golib_conf.rwidth)
+
+
 if __name__ == '__main__':
     root = Tk()
+    configure(root)
     app = UI(root)
     app.pack()
 
