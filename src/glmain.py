@@ -49,11 +49,12 @@ def configure(win):
     Configure general GUI parameters based on the screen width
 
     """
-    goban_height = win.winfo_screenheight() - 150  # leave some space for messages display at the bottom
-    goban_width = win.winfo_screenwidth() - 150    # leave some space for buttons on the left
-    from golib.config import golib_conf
-    golib_conf.rwidth = min(40, int(goban_height / gsize), int(goban_width / gsize))
-    print(golib_conf.rwidth)
+    from golib.config import golib_conf as gc
+    gc.screenh = win.winfo_screenheight()
+    gc.screenw = win.winfo_screenwidth()
+    goban_height = gc.screenh - 150  # leave some space for messages display at the bottom
+    goban_width = gc.screenw - 150   # leave some space for buttons on the left
+    gc.rwidth = min(40, int(goban_height / gsize), int(goban_width / gsize))
 
 
 if __name__ == '__main__':
