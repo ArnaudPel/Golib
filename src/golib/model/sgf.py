@@ -193,6 +193,7 @@ class ParseException(Exception):
     pass
 
 
+# noinspection PyUnresolvedReferences,PyUnboundLocalVariable
 class Parser:
 
     def parse(self, sgf_string):
