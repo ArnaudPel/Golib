@@ -1,7 +1,7 @@
-from tkinter import Tk
-import argparse
 import os
 import platform
+from argparse import ArgumentParser
+from tkinter import Tk
 
 from golib.config.golib_conf import glocation, gsize
 from golib.gui.controller import Controller
@@ -16,8 +16,8 @@ Application entry point.
 """
 
 
-def get_argparser():
-    parser = argparse.ArgumentParser()
+def get_argparser() -> ArgumentParser:
+    parser = ArgumentParser(conflict_handler='resolve')
     parser.add_argument("--sgf", help="SGF file to load at startup.")
     return parser
 
@@ -57,6 +57,15 @@ def configure(win):
     gc.rwidth = min(40, int(goban_height / gsize), int(goban_width / gsize))
 
 
+def bring_to_front():
+    """
+    Mac OS special, to bring app to front at startup
+
+    """
+    if "Darwin" in platform.system():
+        os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "Python" to true' ''')
+
+
 if __name__ == '__main__':
     root = Tk()
     configure(root)
@@ -66,9 +75,6 @@ if __name__ == '__main__':
     args = get_argparser().parse_args()
     control = Controller(app, app, sgffile=args.sgf)
 
-    # mac OS special, to bring app to front at startup
-    if "Darwin" in platform.system():
-        os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "Python" to true' ''')
-
     place(root)
+    bring_to_front()
     root.mainloop()

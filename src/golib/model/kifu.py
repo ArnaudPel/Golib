@@ -1,6 +1,6 @@
 from sys import stdout
 
-from golib.config.golib_conf import gsize, B, W
+from golib.config.golib_conf import appname, gsize, B, W
 from golib.model.sgf_ck import CollectionGl, GameTreeGl, NodeGl, Parser
 from golib.model.exceptions import SgfWarning
 
@@ -275,7 +275,7 @@ class Kifu:
         # add context node
         context = NodeGl(game, None)
         context.properties["SZ"] = [gsize]
-        context.properties['C'] = ["Recorded with Camkifu."]
+        context.properties['C'] = ["Recorded with {}.".format(appname)]
         context.number()
         game.nodes.append(context)
 

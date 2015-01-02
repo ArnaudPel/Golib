@@ -393,11 +393,13 @@ class ControllerUnsafe(ControllerBase):
 
         """
         if not self.kifu.modified or self.display.promptdiscard(title="Open new game"):
+            self.err("-")
             self.loadkifu()
             self.log("New game")
 
     def loadkifu(self, sfile=None):
         self.kifu = Kifu(sgffile=sfile, log=self.log, err=self.err)
+        self.err("-")
         if self.kifu.sgffile is None:
             sfile = "New game"
             if sfile is None:  # if sfile is not None here, there's been a file reading error
@@ -416,6 +418,7 @@ class ControllerUnsafe(ControllerBase):
         if len(sfile):
             self.kifu.sgffile = sfile
             self.kifu.save()
+            self.err("-")
             self.display.title("{0} - {1}".format(appname, basename(sfile)))
         else:
             self.log("Saving cancelled")
