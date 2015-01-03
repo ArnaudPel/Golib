@@ -1,14 +1,15 @@
-from tkinter.constants import N
-from platform import system
-from tkinter.filedialog import asksaveasfilename, askopenfilename
-from tkinter import StringVar, Label, Menu
-from tkinter.messagebox import askokcancel
-from tkinter.simpledialog import askinteger
-from traceback import print_exc
-from tkinter.ttk import Frame, Button
+import tkinter.constants
+import platform
+import traceback
 
+import tkinter as tk
+from tkinter.ttk import Frame, Button
+from tkinter.filedialog import asksaveasfilename, askopenfilename
+from tkinter.simpledialog import askinteger
+from tkinter.messagebox import askokcancel
+
+import golib.gui
 from golib.config.golib_conf import appname, B, W
-from golib.gui.goban import Goban
 
 
 __author__ = 'Arnaud Peloquin'
@@ -18,7 +19,7 @@ The main user interface.
 
 """
 
-if "Darwin" in system():
+if "Darwin" in platform.system():
     mod1 = "Command"
 else:
     mod1 = "Control"
@@ -33,11 +34,11 @@ class UI(Frame):
     def __init__(self, master, origin=(0, 0)):
         Frame.__init__(self, master)
         self.origin = origin
-        self.goban = Goban(self)
+        self.goban = golib.gui.Goban(self)
         self.buttons = Frame(self)
         self.ctx_event = None  # save the event that has originated the context menu
-        self.msg = StringVar(value="Hello")
-        self.err = StringVar(value="-")
+        self.msg = tk.StringVar(value="Hello")
+        self.err = tk.StringVar(value="-")
         self.create_menubar()
         self.init_components()
 
@@ -71,7 +72,7 @@ class UI(Frame):
         roff = self.origin[0]
         coff = self.origin[1]
         self.goban.grid(row=roff, column=coff)
-        self.buttons.grid(row=roff, column=coff+1, sticky=N, pady=10)
+        self.buttons.grid(row=roff, column=coff+1, sticky=tkinter.constants.N, pady=10)
 
         b_delete = Button(self.buttons, text="Delete", command=lambda: self.execute("delselect"))
         # b_open = Button(self.buttons, text="Open", command=lambda: self.execute("open"))
@@ -82,8 +83,8 @@ class UI(Frame):
         b_beqinning = Button(self.buttons, text="<<", command=lambda: self.execute("beginning"))
         b_end = Button(self.buttons, text=">>", command=lambda: self.execute("end"))
 
-        msglabel = Label(self, textvariable=self.msg)
-        errlabel = Label(self, textvariable=self.err, fg="red")
+        msglabel = tk.Label(self, textvariable=self.msg)
+        errlabel = tk.Label(self, textvariable=self.err, fg="red")
 
         # position buttons on the buttons grid
         b_delete.grid(row=0, column=0, columnspan=2)
@@ -102,9 +103,9 @@ class UI(Frame):
         self.goban.focus_set()
 
     def create_menubar(self):
-        self.menubar = Menu(self._root())
+        self.menubar = tk.Menu(self._root())
 
-        m_file = Menu(self.menubar)
+        m_file = tk.Menu(self.menubar)
         m_file.add_command(label="New Game", command=lambda: self.execute("new"), accelerator=mod1+"N")
         self.bind_all("<{0}-n>".format(mod1), lambda _: self.execute("new"))
 
@@ -117,7 +118,7 @@ class UI(Frame):
         self.menubar.add_cascade(label="File", menu=m_file)
 
         # mac OS goody  todo what does it do on Linux or Windows ?
-        m_help = Menu(self.menubar, name='help')
+        m_help = tk.Menu(self.menubar, name='help')
         self.menubar.add_cascade(label="Help", menu=m_help)
 
         # display the menu
@@ -129,7 +130,7 @@ class UI(Frame):
 
         """
         self.ctx_event = event
-        menu = Menu(self.master)
+        menu = tk.Menu(self.master)
         if occupied:
             menu.add_command(label="Swap color", command=self.swap_color)
         else:
@@ -143,7 +144,7 @@ class UI(Frame):
                 self.commands[command](*args)
             except Exception:
                 # keep going
-                print_exc()
+                traceback.print_exc()
             self.goban.focus_set()
         else:
             print("No \"{0}\" command set, ignoring.".format(command))

@@ -1,6 +1,6 @@
-from tkinter import Canvas
+import tkinter as tk
 
-from golib.model.move import Move
+import golib.model
 from golib.config import golib_conf as gc  # needed to dynamically read rwidth value
 from golib.config.golib_conf import gsize, B, W, E
 
@@ -8,14 +8,14 @@ from golib.config.golib_conf import gsize, B, W, E
 __author__ = 'Arnaud Peloquin'
 
 
-class Goban(Canvas):
+class Goban(tk.Canvas):
     """
     The widget dedicated to the display of the goban and the stones.
 
     """
 
     def __init__(self, master):
-        Canvas.__init__(self, master, width=gsize * gc.rwidth, height=gsize * gc.rwidth)
+        tk.Canvas.__init__(self, master, width=gsize * gc.rwidth, height=gsize * gc.rwidth)
         self.stones = mtx(gsize)
         self.closed = False
         self._draw_board()
@@ -61,7 +61,7 @@ class Goban(Canvas):
                 elif color in (B, W):
                     if prev is not None:
                         self.stones[x][y].erase()
-                    stone = Stone(self, Move("tk", ctuple=(color, x, y)))
+                    stone = Stone(self, golib.model.Move("tk", ctuple=(color, x, y)))
                     stone.paint()
                     self.stones[x][y] = stone
                 else:

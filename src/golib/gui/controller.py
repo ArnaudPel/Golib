@@ -1,14 +1,12 @@
-from sys import stdout, stderr
-from ntpath import basename, dirname
-from threading import RLock
-from time import sleep
+import sys
+import ntpath
+import threading
+import time
 
-from golib.model.exceptions import StateError
-from golib.model.move import Move
+from golib.model import Kifu, Rule, RuleUnsafe, Move, StateError, enemy
+
 from golib.config import golib_conf  # needed to dynamically read rwidth value
-from golib.config.golib_conf import gsize, appname, B, W, E
-from golib.model.rules import Rule, RuleUnsafe, enemy
-from golib.model.kifu import Kifu
+from golib.config.golib_conf import gsize, B, W, E
 
 
 __author__ = 'Arnaud Peloquin'
@@ -22,8 +20,8 @@ class ControllerBase(object):
 
     def __init__(self, sgffile=None):
         # temporary log implementation that will hopefully be changed for a more decent framework
-        self.log = lambda msg: stdout.write(str(msg) + "\n")
-        self.err = lambda msg: stderr.write(str(msg) + "\n")
+        self.log = lambda msg: sys.stdout.write(str(msg) + "\n")
+        self.err = lambda msg: sys.stderr.write(str(msg) + "\n")
         self.kifu = Kifu(sgffile=sgffile, log=self.log, err=self.err)
         self.rules = Rule()
         self.current_mn = 0
@@ -150,7 +148,7 @@ class ControllerBase(object):
 
         """
         while not self.at_last_move():
-            sleep(seconds)
+            time.sleep(seconds)
         return self.rules[x][y] is E
 
     def printself(self, _):
@@ -404,7 +402,7 @@ class ControllerUnsafe(ControllerBase):
             sfile = "New game"
             if sfile is None:  # if sfile is not None here, there's been a file reading error
                 self.log("New game")
-        self.display.title("{0} - {1}".format(appname, basename(sfile)))
+        self.display.title("{0} - {1}".format(golib_conf.appname, ntpath.basename(sfile)))
         self.display.clear()
         self.rules.clear()
         self.current_mn = 0
@@ -412,14 +410,14 @@ class ControllerUnsafe(ControllerBase):
     def _save(self):
         sf = self.kifu.sgffile
         if sf:
-            sfile = self.display.promptsave(initdir=dirname(sf), initfile=basename(sf))
+            sfile = self.display.promptsave(initdir=ntpath.dirname(sf), initfile=ntpath.basename(sf))
         else:
             sfile = self.display.promptsave()
         if len(sfile):
             self.kifu.sgffile = sfile
             self.kifu.save()
             self.err("-")
-            self.display.title("{0} - {1}".format(appname, basename(sfile)))
+            self.display.title("{0} - {1}".format(golib_conf.appname, ntpath.basename(sfile)))
         else:
             self.log("Saving cancelled")
 
@@ -462,7 +460,7 @@ class ControllerUnsafe(ControllerBase):
                 self.log_mn()
 
     def _onclose(self):
-        if not self.kifu.modified or self.display.promptdiscard(title="Closing {0}".format(appname)):
+        if not self.kifu.modified or self.display.promptdiscard(title="Closing {0}".format(golib_conf.appname)):
             raise SystemExit(0)
 
     def swap_color(self, event=None):
@@ -522,7 +520,7 @@ class Controller(ControllerUnsafe):
 
     def __init__(self, user_input, display, sgffile=None):
         super().__init__(user_input, display, sgffile)
-        self.rlock = RLock()
+        self.rlock = threading.RLock()
 
     def _append(self, move):
         with self.rlock:

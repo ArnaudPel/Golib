@@ -1,8 +1,7 @@
-from sys import stdout
+import sys
 
 from golib.config.golib_conf import appname, gsize, B, W
-from golib.model.sgf_ck import CollectionGl, GameTreeGl, NodeGl, Parser
-from golib.model.exceptions import SgfWarning
+from golib.model import CollectionGl, GameTreeGl, NodeGl, Parser, SgfWarning
 
 
 __author__ = 'Arnaud Peloquin'
@@ -287,7 +286,7 @@ class Kifu:
 
         """
         if log is None:
-            log = lambda msg: stdout.write(str(msg) + "\n")
+            log = lambda msg: sys.stdout.write(str(msg) + "\n")
         if filepath is not None:
             try:
                 with open(filepath) as f:

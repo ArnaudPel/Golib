@@ -1,11 +1,10 @@
 import os
 import platform
-from argparse import ArgumentParser
-from tkinter import Tk
+import argparse
+import tkinter
 
-from golib.config.golib_conf import glocation, gsize
-from golib.gui.controller import Controller
-from golib.gui.ui import UI
+from golib.config import golib_conf
+import golib.gui
 
 
 __author__ = 'Arnaud Peloquin'
@@ -16,8 +15,8 @@ Application entry point.
 """
 
 
-def get_argparser() -> ArgumentParser:
-    parser = ArgumentParser(conflict_handler='resolve')
+def get_argparser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(conflict_handler='resolve')
     parser.add_argument("--sgf", help="SGF file to load at startup.")
     return parser
 
@@ -38,10 +37,10 @@ def center(win):
 
 
 def place(win):
-    if glocation is None:
+    if golib_conf.glocation is None:
         center(win)
     else:
-        win.geometry("+%d+%d" % glocation)
+        win.geometry("+%d+%d" % golib_conf.glocation)
 
 
 def configure(win):
@@ -54,7 +53,8 @@ def configure(win):
     gc.screenw = win.winfo_screenwidth()
     goban_height = gc.screenh - 150  # leave some space for messages display at the bottom
     goban_width = gc.screenw - 150   # leave some space for buttons on the left
-    gc.rwidth = min(40, int(goban_height / gsize), int(goban_width / gsize))
+    size = golib_conf.gsize
+    gc.rwidth = min(40, int(goban_height / size), int(goban_width / size))
 
 
 def bring_to_front():
@@ -67,13 +67,13 @@ def bring_to_front():
 
 
 if __name__ == '__main__':
-    root = Tk()
+    root = tkinter.Tk()
     configure(root)
-    app = UI(root)
+    app = golib.gui.UI(root)
     app.pack()
 
     args = get_argparser().parse_args()
-    control = Controller(app, app, sgffile=args.sgf)
+    control = golib.gui.Controller(app, app, sgffile=args.sgf)
 
     place(root)
     bring_to_front()

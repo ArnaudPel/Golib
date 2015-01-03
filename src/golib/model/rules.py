@@ -1,7 +1,6 @@
-from threading import RLock
+import threading
 
-from golib.model.exceptions import StateError
-from golib.model.move import Move
+from golib.model import Move, StateError
 from golib.config.golib_conf import gsize, B, W, E
 
 
@@ -256,7 +255,7 @@ class Rule(RuleUnsafe):
 
     def __init__(self, listener=None):
         super().__init__(listener=listener)
-        self.rlock = RLock()
+        self.rlock = threading.RLock()
 
     def put(self, move, reset=True):
         with self.rlock:
