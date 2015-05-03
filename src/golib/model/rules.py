@@ -12,7 +12,7 @@ Hold the state of a game, and ensure logical consistency of changes made to that
 """
 
 
-class RuleUnsafe(object):
+class RuleUnsafe:
     """
     Class responsible for holding the state of a game (stones currently on the goban, liberties count)
     This class is not thread safe.

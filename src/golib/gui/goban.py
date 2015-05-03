@@ -109,7 +109,7 @@ tkcolors = {B: "black", W: "white"}
 tk_inv_colors = {W: "black", B: "white"}
 
 
-class Stone(object):
+class Stone:
     """
     Store attributes related to a displayed stone. Location, tkindex, highlight status, selection status.
 

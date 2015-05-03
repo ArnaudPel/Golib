@@ -3,7 +3,7 @@ from golib.config.golib_conf import gsize, W, B
 __author__ = 'Arnaud Peloquin'
 
 
-class Move(object):
+class Move:
     """
     A.P.
     Class to regroup "move" representations. Such representations can take several forms:
