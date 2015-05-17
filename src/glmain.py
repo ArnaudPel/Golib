@@ -7,8 +7,6 @@ from golib.config import golib_conf
 import golib.gui
 
 
-__author__ = 'Arnaud Peloquin'
-
 """
 Application entry point.
 

@@ -5,9 +5,6 @@ from golib.config import golib_conf as gc  # needed to dynamically read rwidth v
 from golib.config.golib_conf import gsize, B, W, E
 
 
-__author__ = 'Arnaud Peloquin'
-
-
 class Goban(tk.Canvas):
     """
     The widget dedicated to the display of the goban and the stones.

@@ -9,9 +9,6 @@ from golib.config import golib_conf  # needed to dynamically read rwidth value
 from golib.config.golib_conf import gsize, B, W, E
 
 
-__author__ = 'Arnaud Peloquin'
-
-
 class ControllerBase:
     """
     Provide Go-related controls only (no GUI).

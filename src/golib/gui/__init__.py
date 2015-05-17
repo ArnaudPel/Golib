@@ -1,4 +1,3 @@
-__author__ = 'Arnaud Peloquin'
 
 from golib.gui.controller import ControllerBase, Controller
 from golib.gui.ui import UI

@@ -12,8 +12,6 @@ import golib.gui
 from golib.config.golib_conf import appname, B, W
 
 
-__author__ = 'Arnaud Peloquin'
-
 """
 The main user interface.
 

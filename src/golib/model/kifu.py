@@ -4,9 +4,6 @@ from golib.config.golib_conf import appname, gsize, B, W
 from golib.model import CollectionGl, GameTreeGl, NodeGl, Parser, SgfWarning
 
 
-__author__ = 'Arnaud Peloquin'
-
-
 class Kifu:
     """
     Utility class simplifying common interactions with the SGF structure.

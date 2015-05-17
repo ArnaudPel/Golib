@@ -4,9 +4,6 @@ from golib.model import Move, StateError
 from golib.config.golib_conf import gsize, B, W, E
 
 
-__author__ = 'Arnaud Peloquin'
-
-
 class RuleUnsafe:
     """ Hold the current and historical states of a game. Accept/reject new moves.
 

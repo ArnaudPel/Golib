@@ -8,8 +8,6 @@ import golib.model
 from golib.config.golib_conf import B, W
 
 
-__author__ = 'Arnaud Peloquin'
-
 """
 Extensions of Tauber's SGF, in order not to mix codes. This mostly consists in adds, plus a few overrides.
 
