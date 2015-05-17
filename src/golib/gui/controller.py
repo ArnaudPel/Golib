@@ -3,7 +3,7 @@ import ntpath
 import threading
 import time
 
-from golib.model import Kifu, Rule, RuleUnsafe, Move, StateError, enemy
+from golib.model import Kifu, Rule, RuleUnsafe, Move, StateError, enemy_of
 
 from golib.config import golib_conf  # needed to dynamically read rwidth value
 from golib.config.golib_conf import gsize, B, W, E
@@ -472,7 +472,7 @@ class ControllerUnsafe(ControllerBase):
         node = self.kifu.locate(x, y, upbound=self.current_mn)
         if node is not None:
             move = node.getmove()
-            move.color = enemy(move.color)
+            move.color = enemy_of(move.color)
             # now check that the insertion of that stone with the opposite color is not going to break anything
             if self._check_update(move, message="Cannot swap color"):
                 self.rules.remove(node.getmove())
