@@ -1,4 +1,5 @@
-from golib.model import sgf
+from golib.model import sgf, SGF_TYPE
+
 # little hack to force Tauber's sgf extensibility.
 sgf.createtree = lambda parent, parser=None: GameTreeGl(parent, parser=parser)
 sgf.createnode = lambda parent, previous, parser=None: NodeGl(parent, previous, parser=parser)
@@ -121,7 +122,7 @@ class NodeGl(sgf.Node):
         if pos is not None:
             if len(pos) == 0:
                 pos = '--'  # the player has passed
-            return golib.model.Move("sgf", (color, pos[0], pos[1]), number=number)
+            return golib.model.Move(SGF_TYPE, (color, pos[0], pos[1]), number=number)
         return None
 
     def __repr__(self):

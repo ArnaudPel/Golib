@@ -1,8 +1,8 @@
 import tkinter as tk
 
-import golib.model
 from golib.config import golib_conf as gc  # needed to dynamically read rwidth value
 from golib.config.golib_conf import gsize, B, W, E
+from golib.model import Move, TK_TYPE
 
 
 class Goban(tk.Canvas):
@@ -58,7 +58,7 @@ class Goban(tk.Canvas):
                 elif color in (B, W):
                     if prev is not None:
                         self.stones[x][y].erase()
-                    stone = Stone(self, golib.model.Move("tk", ctuple=(color, x, y)))
+                    stone = Stone(self, Move(TK_TYPE, ctuple=(color, x, y)))
                     stone.paint()
                     self.stones[x][y] = stone
                 else:

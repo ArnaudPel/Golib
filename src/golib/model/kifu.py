@@ -1,22 +1,22 @@
 import sys
 
 from golib.config.golib_conf import appname, gsize, B, W
-from golib.model import CollectionGl, GameTreeGl, NodeGl, Parser, SgfWarning
+from golib.model import CollectionGl, GameTreeGl, NodeGl, Parser, SgfWarning, SGF_TYPE
 
 
 class Kifu:
-    """
-    Utility class simplifying common interactions with the SGF structure.
+    """ Provide common interactions with the SGF structure.
 
-    For now Kifu only supports one line of play: no variations are allowed.
+    Only one line of play is supported: no variations are allowed.
     This means that an entire game is one single list of nodes.
-    In order to make future changes as seamless as possible, some python "magic methods"
-    have been used where possible. Hopefully they will help keep this "branch" concept
-    inside Kifu.
-    Methods currently relying on that naive implementation have a @naive doctag
 
-    self.game -- the GameTree object backing the recording of this kifu.
-
+    Attributes:
+        game: GameTree
+            The object backing the recording of this kifu.
+        sgffile: str
+            The file where to load/save the game.
+        modified: bool
+            Indicates whether this game has been modified since load/save.
     """
 
     def __init__(self, sgffile=None, log=None, err=None):
@@ -51,57 +51,49 @@ class Kifu:
         return copy
 
     def append(self, move):
-        """
-        Append the move at the end of the game.
-
+        """ Append the move at the end of the game.
         """
         node = self._prepare(move)
         self.game.nodes.append(node)
         self.modified = True
 
-    def insert(self, move, number):
+    def insert(self, move, position: int):
+        """ Insert the move at the provided position. Increment subsequent moves number by one.
+        If position points to the end of the game, append instead.
         """
-        Insert the move at the provided move number. Subsequent moves have their number incremented by one.
-
-        """
-        node = self._prepare(move)
-        node.number(number)
+        new_node = self._prepare(move)
+        new_node.number(position)
 
         idx = None
         # update subsequent moves number
         for i in range(len(self)):
-            nd = self.game.nodes[i]
+            nod = self.game.nodes[i]
             try:
-                nb = nd.properties["MN"][0]
-                if number <= nb:
-                    nd.properties["MN"][0] += 1
-                if nb == number:
+                nb = nod.properties["MN"][0]
+                if position <= nb:
+                    nod.properties["MN"][0] += 1
+                if nb == position:
                     idx = i
             except KeyError:
                 pass  # not a move
 
         if idx is not None:
-            self.game.nodes.insert(idx, node)
-
-        # this insertion is actually an append
-        elif i == number - 1:
-            self.game.nodes.append(node)
+            self.game.nodes.insert(idx, new_node)
+        elif i == position - 1:
+            self.game.nodes.append(new_node)
         self.modified = True
 
     def relocate(self, origin, dest):
-        """
-        Change the coordinates of "origin" to those of "dest". The move number is not changed.
-
+        """ Locate the move matching "origin" and change its coordinates to those of "dest".
+        The move number is not changed.
         """
         node = self.locate(origin.x, origin.y)
-        a, b = dest.get_coord("sgf")
+        a, b = dest.get_coord(SGF_TYPE)
         node.properties[origin.color] = [a + b]
         self.modified = True
 
     def delete(self, move):
-        """
-        @naive
-
+        """ Delete the provided move if found, and decrement subsequent move numbers by one.
         """
         decr = False
         torem = None
@@ -115,29 +107,33 @@ class Kifu:
                         torem = node
                         # keep looping to decrement subsequent moves
                 except AttributeError:
-                    pass
+                    pass  # not a move
         if torem is not None:
             self.game.nodes.remove(torem)
             self.modified = True
 
     def update_mv(self, move, node=None):
+        """ Update the node with the provided move. If the node is not provided, look for it in the game.
+        """
         if node is None:
             node = self.locate(move.x, move.y)
         for color in (B, W):
             # delete previous move position
-            try: del node.properties[color]
-            except KeyError: pass
+            try:
+                del node.properties[color]
+            except KeyError:
+                pass
         self._prepare(move, node=node)
         self.modified = True
 
     def get_move_seq(self, first=1, last=1000):
-        """
-        Return the sub-sequence of moves of the main line of play, in a fresh list.
-        Non-move nodes (like startup node) are ignored.
-        @naive
+        """ Return the sub-sequence of moves. Non-move nodes (like startup node) are skipped.
 
-        first, last -- move number delimiting the sequence (both inclusive)
-
+        Args:
+            first: int
+                Node sequence start index, inclusive. NOT interpreted as a move number.
+            last: int
+                Node sequence end index, inclusive. NOT interpreted as a move number.
         """
         seq = []
         for i in range(first, len(self)):
@@ -148,35 +144,31 @@ class Kifu:
                     break
         return seq
 
-    def getmove_at(self, number):
-        """
-        Return the move having the given number if found.
-        @naive
-
+    def getmove_at(self, number: int):
+        """ Return the move corresponding to number.
         """
         for i in range(number, len(self)):
             mv = self[i].getmove()
             if mv is not None and mv.number == number:
                 return mv
 
-    def locate(self, x, y, upbound=None):
-        """
-        Return the node describing the given goban intersection, or None if the intersection is empty.
-        Performs a backward search starting at the end of the list , in order to have the stone currently on that location.
-        @naive
+    def locate(self, x: int, y: int, upbound=None):
+        """ Return the node describing the provided intersection.
 
+        Search from most recent to least recent, in order to get the stone currently on that location.
         """
         start = upbound if upbound else len(self) - 1
-        for i in range(start, -1, -1):  # go backwards to match move on screen
+        for i in range(start, -1, -1):
             mv = self[i].getmove()
             if mv and mv.x == x and mv.y == y:
                 return self[i]
 
-    def contains_pos(self, x, y, start=0):
-        """
-        Return the index of the first node containing a move placed at the provided coordinates.
-        start -- the index where to start search (inclusive)
+    def contains_pos(self, x: int, y: int, start: int=0):
+        """ Return the index of the first node containing a move at the provided coordinates.
 
+        Args:
+            start: int
+                The index where to start search (inclusive).
         """
         for i in range(start, len(self)):
             mv = self[i].getmove()
@@ -185,10 +177,7 @@ class Kifu:
         return False
 
     def lastmove(self):
-        """
-        Return the last move on the main line of play, if any.
-        @naive
-
+        """ Return the last move on the main line of play.
         """
         for i in range(-1, -len(self), -1):
             mv = self[i].getmove()
@@ -196,9 +185,7 @@ class Kifu:
                 return mv
 
     def next_color(self):
-        """
-        Return the (guessed) color of the next move to append, based on a black-white alternation assumption.
-
+        """ Return the color of the next move to append, based on a black-white alternation assumption.
         """
         current = self.lastmove()
         if current is not None:
@@ -207,9 +194,7 @@ class Kifu:
             return B  # probably the beginning of the game
 
     def save(self):
-        """
-        Save to file.
-
+        """ Save the whole game to file.
         """
         if self.sgffile is not None:
             with open(self.sgffile, 'w') as f:
@@ -220,48 +205,35 @@ class Kifu:
             raise SgfWarning("No file defined, can't save.")
 
     def _prepare(self, move, node=None):
-        """
-        Create or update a node according to the provided move.
-
+        """ Create or update a node according to the provided move.
         """
         if node is None:
             node = NodeGl(self.game, self[-1])
-        r, c = move.get_coord("sgf")
+        r, c = move.get_coord(SGF_TYPE)
         node.properties[move.color] = [r + c]  # sgf properties are in a list
         node.number(nb=move.number)
         return node
 
     def __iter__(self):
+        """ Iterate over the nodes of the main line of play.
         """
-         Iterate over the nodes of the main line of play.
-         @naive
-
-         """
         return self.game.nodes.__iter__()
 
     def __getitem__(self, item):
+        """ Return a node of the main line of play.
         """
-         Return a node of the main line of play.
-         @naive
-
-         """
         return self.game.nodes.__getitem__(item)
 
     def __len__(self):
+        """ Return the number of nodes on the main line of play.
         """
-         The number of nodes on the main line of play.
-         @naive
-
-         """
         return self.game.nodes.__len__()
 
     def __repr__(self):
         return repr(self.game)
 
     def _new(self):
-        """
-        Create an empty Kifu.
-
+        """ Use a new (empty) GameTree object in this Kifu.
         """
         # initialize game
         collection = CollectionGl()
@@ -274,13 +246,10 @@ class Kifu:
         context.properties['C'] = ["Recorded with {}.".format(appname)]
         context.number()
         game.nodes.append(context)
-
         self.game = game
 
     def _parse(self, filepath, log=None, err=None):
-        """
-        Create a Kifu reflecting the given file.
-
+        """ Use a GameTree object loaded from the provided file.
         """
         if log is None:
             log = lambda msg: sys.stdout.write(str(msg) + "\n")

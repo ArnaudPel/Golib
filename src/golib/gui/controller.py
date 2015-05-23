@@ -3,7 +3,7 @@ import ntpath
 import threading
 import time
 
-from golib.model import Kifu, Rule, RuleUnsafe, Move, StateError, enemy_of
+from golib.model import Kifu, Rule, RuleUnsafe, Move, StateError, enemy_of, TK_TYPE, SGF_TYPE
 
 from golib.config import golib_conf  # needed to dynamically read rwidth value
 from golib.config.golib_conf import gsize, B, W, E
@@ -122,7 +122,7 @@ class ControllerBase:
 
     def log_mn(self):
         mv = self.kifu.getmove_at(self.current_mn)
-        if mv and (mv.get_coord("sgf") == ('-', '-')):
+        if mv and (mv.get_coord(SGF_TYPE) == ('-', '-')):
             self.log("{0} pass".format(mv.color))
         else:
             kifu_lastmove = self.kifu.lastmove()
@@ -229,7 +229,7 @@ class ControllerUnsafe(ControllerBase):
         """
         x, y = get_intersection(event)
         self.clickloc = (x, y)
-        self._select(Move("tk", ("Dummy", x, y)))
+        self._select(Move(TK_TYPE, ("Dummy", x, y)))
 
     def _rclick(self, event):
         x, y = get_intersection(event)
@@ -243,7 +243,7 @@ class ControllerUnsafe(ControllerBase):
         """
         x, y = get_intersection(event)
         if not self.dragging:
-            move = Move("tk", (self.kifu.next_color(), x, y), number=self.current_mn + 1)
+            move = Move(TK_TYPE, (self.kifu.next_color(), x, y), number=self.current_mn + 1)
             try:
                 self.rules.put(move)
                 self._append(move)
@@ -266,7 +266,7 @@ class ControllerUnsafe(ControllerBase):
             color = self.rules.stones[x_loc][y_loc]
             if color in (B, W):
                 origin = self.kifu.locate(x_loc, y_loc).getmove()
-                dest = Move("tk", (color, x_, y_), number=origin.number)
+                dest = Move(TK_TYPE, (color, x_, y_), number=origin.number)
                 if self._checkinsert(dest):
                     try:
                         self.rules.remove(origin)
@@ -374,7 +374,7 @@ class ControllerUnsafe(ControllerBase):
     def _opensgf(self):
         if not self.kifu.modified or self.display.promptdiscard(title="Discard current sgf"):
             dialog_title = "Open sgf (Cancel to open a blank SGF)"
-            sfile = self.display.promptopen(title=dialog_title, filetypes=[("Smart Game Format", "sgf")])
+            sfile = self.display.promptopen(title=dialog_title, filetypes=[("Smart Game Format", SGF_TYPE)])
             if len(sfile):
                 self.loadkifu(sfile)
                 return True

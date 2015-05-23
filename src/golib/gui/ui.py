@@ -10,7 +10,7 @@ from tkinter.messagebox import askokcancel
 
 import golib.gui
 from golib.config.golib_conf import appname, B, W
-
+from golib.model import SGF_TYPE
 
 """
 The main user interface.
@@ -165,7 +165,7 @@ class UI(Frame):
         return askokcancel(title=title, message=msg, icon="warning")
 
     def promptsave(self, initdir=None, initfile=None):
-        return asksaveasfilename(defaultextension="sgf", initialdir=initdir, initialfile=initfile)
+        return asksaveasfilename(defaultextension=SGF_TYPE, initialdir=initdir, initialfile=initfile)
 
     def promptgoto(self):
         number = askinteger("Jump", "Go to move")

@@ -1,6 +1,6 @@
 import threading
 
-from golib.model import Move, StateError
+from golib.model import Move, StateError, TK_TYPE, SGF_TYPE
 from golib.config.golib_conf import gsize, B, W, E
 
 
@@ -154,7 +154,7 @@ class RuleUnsafe:
 
         Raise exception if: Ko, Suicide play, Playing on an already occupied position.
         """
-        if move.get_coord("sgf") != ('-', '-'):
+        if move.get_coord(SGF_TYPE) != ('-', '-'):
             assert move.color in (B, W), "Cannot append empty move."
             if self.stones_buff[move.x][move.y] == E:
                 enem_color = enemy_of(move.color)
@@ -169,7 +169,7 @@ class RuleUnsafe:
                         group, nblibs = self._data(row, col)
                         if nblibs == 0:
                             for k, l in group:
-                                deleted.append(Move("tk", (enem_color, k, l)))
+                                deleted.append(Move(TK_TYPE, (enem_color, k, l)))
                                 self.stones_buff[k][l] = E
                             safe = True  # killed at least one enemy
 
@@ -196,7 +196,7 @@ class RuleUnsafe:
 
         Raise exception if the move to pop does not match what's been saved in this rules object.
         """
-        if move.get_coord("sgf") != ('-', '-'):
+        if move.get_coord(SGF_TYPE) != ('-', '-'):
             if self.stones_buff[move.x][move.y] == move.color:
                 self.stones_buff[move.x][move.y] = E
                 captured = self.deleted_buff.pop()
