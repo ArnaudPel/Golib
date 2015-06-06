@@ -9,13 +9,13 @@ KGS_TYPE = "kgs"  # KGS Go Server
 
 
 class Move:
-    """ Handle "move" representation.
+    """ Handle the representation of a move on the Goban.
 
     Attributes:
         number: int
             The move number as understood by the players (black plays first move, etc..)
         color: B, W or E
-            The color of the player that's played this Move.
+            The color of the player that has played this Move. E for empty.
         x: int
             The first coordinate of the intersection where this Move has been played,  in an internal coordinate type.
         y: int
@@ -27,7 +27,7 @@ class Move:
 
         Args:
             ctype:
-                The coordinates type that should be used to interpret ctuple.
+                The coordinates type that should be used to interpret ctuple (see *_TYPE above).
             ctuple: tuple(color, x, y)
                 x and y are interpreted depending on the 'ctype' argument.
             string: str
@@ -123,13 +123,12 @@ class Move:
         return self.color == o.color and self.x == o.x and self.y == o.y
 
     def __hash__(self):
-        """
-        Implementation based on the assumption that x, y are in [0, gsize[
+        """ Implementation based on the assumption that x, y are in [0, gsize[
+
         Let gszise * gsize be g2.
         Black positions hashes are in [0, g2[
         White positions hashes are in [g2, 2*g2[
         Pass moves are in [2*g2, 2*g2 + 1]
-
         """
         if 0 <= self.x and 0 <= self.y:  # normal move
             color_hash = 0 if self.color == B else gsize * gsize

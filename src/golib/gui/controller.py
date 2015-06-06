@@ -21,7 +21,7 @@ class ControllerBase:
         self.err = lambda msg: sys.stderr.write(str(msg) + "\n")
         self.kifu = Kifu(sgffile=sgffile, log=self.log, err=self.err)
         self.rules = Rule()
-        self.current_mn = 0
+        self.head = 0
 
     def _append(self, move):
         """
@@ -50,7 +50,7 @@ class ControllerBase:
         if self.at_last_move():
             rule_save = self.rules.copy()  # to rollback if something goes wrong
             kifu_save = self.kifu.copy()   # to rollback if something goes wrong
-            number_save = self.current_mn
+            number_save = self.head
             self.rules.reset()
             try:
                 i = 0
@@ -59,7 +59,7 @@ class ControllerBase:
                     torem = self.kifu.locate(mv.x, mv.y).getmove()
                     self.rules.remove(torem, reset=False)
                     self.kifu.delete(torem)
-                    self.current_mn -= 1
+                    self.head -= 1
                     i += 1
                     if i < len(moves):
                         mv = moves[i]
@@ -69,10 +69,10 @@ class ControllerBase:
                     self.rules.confirm()  # save deletion changes
                 while i < len(moves):
                     assert mv.color in (B, W)
-                    mv.number = self.current_mn + 1
+                    mv.number = self.head + 1
                     self.rules.put(mv, reset=False)
                     self.kifu.append(mv)
-                    self.current_mn += 1
+                    self.head += 1
                     i += 1
                     if i < len(moves):
                         mv = moves[i]
@@ -83,7 +83,7 @@ class ControllerBase:
             except StateError as se:
                 self.rules = rule_save
                 self.kifu = kifu_save
-                self.current_mn = number_save
+                self.head = number_save
                 print("Bulk update failed: {}".format(se))
         else:
             raise NotImplementedError("Variations not allowed yet. Please navigate to end of game.")
@@ -94,7 +94,7 @@ class ControllerBase:
         sgf file if saved.
 
         """
-        move = self.kifu.locate(x, y, upbound=self.current_mn).getmove()
+        move = self.kifu.locate(x, y, upbound=self.head).getmove()
         self.rules.remove(move)
         self.rules.confirm()
         self.kifu.delete(move)
@@ -113,15 +113,15 @@ class ControllerBase:
             return node.getmove()
 
     def _incr_move_number(self, step=1):
-        self.current_mn += step
+        self.head += step
         self.log_mn()
 
     def at_last_move(self):
         last_move = self.kifu.lastmove()
-        return not last_move or (self.current_mn == last_move.number)
+        return not last_move or (self.head == last_move.number)
 
     def log_mn(self):
-        mv = self.kifu.getmove_at(self.current_mn)
+        mv = self.kifu.getmove_at(self.head)
         if mv and (mv.get_coord(SGF_TYPE) == ('-', '-')):
             self.log("{0} pass".format(mv.color))
         else:
@@ -129,7 +129,7 @@ class ControllerBase:
             total_moves = 0
             if kifu_lastmove is not None:
                 total_moves = kifu_lastmove.number
-            self.log("Move {0} / {1}".format(self.current_mn, total_moves))
+            self.log("Move {0} / {1}".format(self.head, total_moves))
 
     def is_empty_blocking(self, x, y, seconds=0.1):
         """
@@ -243,7 +243,7 @@ class ControllerUnsafe(ControllerBase):
         """
         x, y = get_intersection(event)
         if not self.dragging:
-            move = Move(TK_TYPE, (self.kifu.next_color(), x, y), number=self.current_mn + 1)
+            move = Move(TK_TYPE, (self.kifu.next_color(), x, y), number=self.head + 1)
             try:
                 self.rules.put(move)
                 self._append(move)
@@ -273,7 +273,7 @@ class ControllerUnsafe(ControllerBase):
                         self.rules.put(dest, reset=False)
                         self.rules.confirm()
                         self.kifu.relocate(origin, dest)
-                        self.display.highlight(self.kifu.getmove_at(self.current_mn))
+                        self.display.highlight(self.kifu.getmove_at(self.head))
                         self.clickloc = x_, y_
                         return origin, dest  # to be used by extending code
                     except StateError as se:
@@ -287,11 +287,11 @@ class ControllerUnsafe(ControllerBase):
 
         """
         x, y = get_intersection(event)
-        move = Move('tk', (color, x, y), number=self.current_mn + 1)
+        move = Move('tk', (color, x, y), number=self.head + 1)
         # check for potential conflict: browsing could be blocked if we occupy a position already used later in game
         if self._checkinsert(move):
             self.rules.put(move)
-            self.kifu.insert(move, self.current_mn + 1)
+            self.kifu.insert(move, self.head + 1)
             self.rules.confirm()
             self._incr_move_number()
             self.rules.confirm()
@@ -303,7 +303,7 @@ class ControllerUnsafe(ControllerBase):
         check -- allow for bound checking to have happened outside.
         """
         if not self.at_last_move():
-            move = self.kifu.getmove_at(self.current_mn + 1)
+            move = self.kifu.getmove_at(self.head + 1)
             self.rules.put(move)
             self.rules.confirm()
             self._incr_move_number()
@@ -314,9 +314,9 @@ class ControllerUnsafe(ControllerBase):
         Point the rule structure to the previous move. The current move will still be in the game, and can be accessed
         again by _forward().
         """
-        if 0 < self.current_mn:
+        if 0 < self.head:
             try:
-                move = self.kifu.getmove_at(self.current_mn)
+                move = self.kifu.getmove_at(self.head)
                 self.rules.remove(move)
                 self.rules.confirm()
                 self._incr_move_number(step=-1)
@@ -338,7 +338,7 @@ class ControllerUnsafe(ControllerBase):
 
     def _checkinsert(self, move):
         """
-        Check that "move" can be inserted at self.current_mn.
+        Check that "move" can be inserted at self.head.
         Forward check from the insertion move number, to ensure that no conflict will occur in the sequence:
         if a stone is inserted while another is recorded to be played later at the same location, it can
         create severe problems (as of current implementation, forward navigation cannot go past the conflict).
@@ -350,22 +350,22 @@ class ControllerUnsafe(ControllerBase):
 
         nr = 0
         # initialize rule object up to insert position (excluded)
-        for nr in range(1, self.current_mn + 1):
+        for nr in range(1, self.head + 1):
             rule.put(self.kifu.getmove_at(nr), reset=False)
 
         # perform check
         try:
             rule.put(move, reset=False)  # new move insertion
-            for nr in range(self.current_mn + 1, self.kifu.lastmove().number + 1):
+            for nr in range(self.head + 1, self.kifu.lastmove().number + 1):
                 rule.put(self.kifu.getmove_at(nr), reset=False)
         except StateError as se:
-            self.err("Cannot insert %s at %d: %s at move %d" % (move.color, self.current_mn, se, nr))
+            self.err("Cannot insert %s at %d: %s at move %d" % (move.color, self.head, se, nr))
             return False
         return True
 
     def _incr_move_number(self, step=1, _=None):
         super()._incr_move_number(step=step)
-        self.display.highlight(self.kifu.getmove_at(self.current_mn))
+        self.display.highlight(self.kifu.getmove_at(self.head))
 
     def _append(self, move):
         super()._append(move)
@@ -402,7 +402,7 @@ class ControllerUnsafe(ControllerBase):
         self.display.title("{0} - {1}".format(golib_conf.appname, ntpath.basename(sfile)))
         self.display.clear()
         self.rules.clear()
-        self.current_mn = 0
+        self.head = 0
 
     def _save(self):
         sf = self.kifu.sgffile
@@ -444,16 +444,16 @@ class ControllerUnsafe(ControllerBase):
             if lastmove is not None:
                 bound = max(0, min(move_nr, lastmove.number))
                 self.rules.reset()  # need to do it manually, because it is not done below
-                while self.current_mn < bound:
-                    move = self.kifu.getmove_at(self.current_mn + 1)
+                while self.head < bound:
+                    move = self.kifu.getmove_at(self.head + 1)
                     self.rules.put(move, reset=False)
-                    self.current_mn += 1
-                while bound < self.current_mn:
-                    move = self.kifu.getmove_at(self.current_mn)
+                    self.head += 1
+                while bound < self.head:
+                    move = self.kifu.getmove_at(self.head)
                     self.rules.remove(move, reset=False)
-                    self.current_mn -= 1
+                    self.head -= 1
                 self.rules.confirm()
-                self.display.highlight(self.kifu.getmove_at(self.current_mn))
+                self.display.highlight(self.kifu.getmove_at(self.head))
                 self.log_mn()
 
     def _onclose(self):
@@ -466,7 +466,7 @@ class ControllerUnsafe(ControllerBase):
 
         """
         x, y = get_intersection(event)
-        node = self.kifu.locate(x, y, upbound=self.current_mn)
+        node = self.kifu.locate(x, y, upbound=self.head)
         if node is not None:
             move = node.getmove()
             move.color = enemy_of(move.color)
