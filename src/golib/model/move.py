@@ -12,9 +12,9 @@ class Move:
     """ Handle the representation of a move on the Goban.
 
     Attributes:
-        number: int
+        number: int
             The move number as understood by the players (black plays first move, etc..)
-        color: B, W or E
+        color: B, W or E
             The color of the player that has played this Move. E for empty.
         x: int
             The first coordinate of the intersection where this Move has been played,  in an internal coordinate type.
@@ -66,7 +66,7 @@ class Move:
         elif ctype == NP_TYPE:
             self.x = b
             self.y = a
-        elif ctype == KGS_TYPE:  # kgs GUI: ranging from A1 to T19  (careful : the 'I' letter is omitted)
+        elif ctype == KGS_TYPE:  # kgs GUI: ranging from A1 to T19  (careful : the 'I' letter is omitted)
             self.x = ord(a) - (65 if ord(a) < 73 else 66)
             self.y = gsize - int(b)
         else:

@@ -152,7 +152,7 @@ class RuleUnsafe:
     def _append(self, move):
         """ Check if the provided move can be played on the Goban, and update buffers accordingly.
 
-        Raise exception if: Ko, Suicide play, Playing on an already occupied position.
+        Raise exception if: Ko, Suicide play, Playing on an already occupied position.
         """
         if move.get_coord(SGF_TYPE) != ('-', '-'):
             assert move.color in (B, W), "Cannot append empty move."

@@ -13,9 +13,9 @@ class Kifu:
     Attributes:
         game: GameTree
             The object backing the recording of this kifu.
-        sgffile: str
+        sgffile: str
             The file where to load/save the game.
-        modified: bool
+        modified: bool
             Indicates whether this game has been modified since load/save.
     """
 
