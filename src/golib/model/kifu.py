@@ -204,6 +204,12 @@ class Kifu:
         else:
             raise SgfWarning("No file defined, can't save.")
 
+    def snapshot(self, filepath):
+        """ Dump the whole game to file system silently, without remembering it (the game is still 'modified')
+        """
+        with open(filepath, 'w') as f:
+            self.game.output(f)
+
     def _prepare(self, move, node=None):
         """ Create or update a node according to the provided move.
         """
