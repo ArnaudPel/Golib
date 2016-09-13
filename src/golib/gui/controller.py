@@ -23,6 +23,39 @@ class ControllerBase:
         self.rules = Rule()
         self.head = 0
 
+    def loadkifu(self, sfile=None):
+        self.kifu = Kifu(sgffile=sfile, log=self.log, err=self.err)
+        self.err("-")
+        if self.kifu.sgffile is None:
+            sfile = "New game"
+            if sfile is None:  # if sfile is not None here, there's been a file reading error
+                self.log("New game")
+        self.rules.clear()
+        self.head = 0
+        return sfile
+
+    def goto(self, move_nr):
+        """ Update display and state to reach the specified move number.
+
+        move_nr -- the move number to jump to.
+        """
+        if move_nr is not None:
+            lastmove = self.kifu.lastmove()
+            if lastmove is not None:
+                bound = max(0, min(move_nr, lastmove.number))
+                self.rules.reset()  # need to do it manually, because it is not done below
+                while self.head < bound:
+                    move = self.kifu.getmove_at(self.head + 1)
+                    self.rules.put(move, reset=False)
+                    self.head += 1
+                while bound < self.head:
+                    move = self.kifu.getmove_at(self.head)
+                    self.rules.remove(move, reset=False)
+                    self.head -= 1
+                self.rules.confirm()
+                return True
+        return False
+
     def _append(self, move):
         """
         Append the move to self.kifu if the controller is pointing at the last move.
@@ -197,7 +230,7 @@ class ControllerUnsafe(ControllerBase):
             self.input.keyin.bind("<Left>", self._backward)
             self.input.keyin.bind("<Down>", self._backward)
             self.input.keyin.bind("<p>", self.printself)
-            self.input.keyin.bind("<g>", lambda _: self._goto(self.display.promptgoto()))
+            self.input.keyin.bind("<g>", lambda _: self.goto(self.display.promptgoto()))
             self.input.keyin.bind("<Escape>", lambda _: self._select())
             self.input.keyin.bind("<Delete>", self._del_selected)
             self.input.keyin.bind("<BackSpace>", self._del_selected)
@@ -213,8 +246,8 @@ class ControllerUnsafe(ControllerBase):
             self.input.commands["delselect"] = self._del_selected
             self.input.commands["back"] = self._backward
             self.input.commands["forward"] = self._forward
-            self.input.commands["beginning"] = lambda: self._goto(0)
-            self.input.commands["end"] = lambda: self._goto(722)  # big overkill for any sane game
+            self.input.commands["beginning"] = lambda: self.goto(0)
+            self.input.commands["end"] = lambda: self.goto(722)  # big overkill for any sane game
             self.input.commands["close"] = self._onclose
             self.input.commands["insert"] = self._insert
             self.input.commands["color"] = self.swap_color
@@ -393,16 +426,9 @@ class ControllerUnsafe(ControllerBase):
             self.log("New game")
 
     def loadkifu(self, sfile=None):
-        self.kifu = Kifu(sgffile=sfile, log=self.log, err=self.err)
-        self.err("-")
-        if self.kifu.sgffile is None:
-            sfile = "New game"
-            if sfile is None:  # if sfile is not None here, there's been a file reading error
-                self.log("New game")
+        sfile = super().loadkifu(sfile)
         self.display.title("{0} - {1}".format(golib_conf.appname, ntpath.basename(sfile)))
         self.display.clear()
-        self.rules.clear()
-        self.head = 0
 
     def _save(self):
         sf = self.kifu.sgffile
@@ -431,30 +457,14 @@ class ControllerUnsafe(ControllerBase):
             self.selected = None
             self.display.select(None)
 
-    def _goto(self, move_nr):
-        """
-        Update display and state to reach the specified move number.
-        move_nr -- the move number to jump to.
+    def goto(self, move_nr):
+        """ Update display and state to reach the specified move number.
 
+        move_nr -- the move number to jump to.
         """
-        # implementation note: this method was first based on the existing _forward() and _backward()
-        # this second implementation is more efficient though, as it can refresh display only at the end.
-        if move_nr is not None:
-            lastmove = self.kifu.lastmove()
-            if lastmove is not None:
-                bound = max(0, min(move_nr, lastmove.number))
-                self.rules.reset()  # need to do it manually, because it is not done below
-                while self.head < bound:
-                    move = self.kifu.getmove_at(self.head + 1)
-                    self.rules.put(move, reset=False)
-                    self.head += 1
-                while bound < self.head:
-                    move = self.kifu.getmove_at(self.head)
-                    self.rules.remove(move, reset=False)
-                    self.head -= 1
-                self.rules.confirm()
-                self.display.highlight(self.kifu.getmove_at(self.head))
-                self.log_mn()
+        if super().goto(move_nr):
+            self.display.highlight(self.kifu.getmove_at(self.head))
+            self.log_mn()
 
     def _onclose(self):
         if not self.kifu.modified or self.display.promptdiscard(title="Closing {0}".format(golib_conf.appname)):
