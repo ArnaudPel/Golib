@@ -1,12 +1,11 @@
-import sys
 import ntpath
+import sys
 import threading
 import time
 
-from golib.model import Kifu, Rule, RuleUnsafe, Move, StateError, enemy_of, TK_TYPE, SGF_TYPE
-
 from golib.config import golib_conf  # needed to dynamically read rwidth value
 from golib.config.golib_conf import gsize, B, W, E
+from golib.model import Kifu, Rule, RuleUnsafe, Move, StateError, enemy_of, TK_TYPE, SGF_TYPE
 
 
 class ControllerBase:
@@ -410,6 +409,7 @@ class ControllerUnsafe(ControllerBase):
             sfile = self.display.promptopen(title=dialog_title, filetypes=[("Smart Game Format", SGF_TYPE)])
             if len(sfile):
                 self.loadkifu(sfile)
+                self.goto(999)
                 return True
             else:
                 self.log("Opening sgf cancelled")
@@ -427,7 +427,7 @@ class ControllerUnsafe(ControllerBase):
 
     def loadkifu(self, sfile=None):
         sfile = super().loadkifu(sfile)
-        self.display.title("{0} - {1}".format(golib_conf.appname, ntpath.basename(sfile)))
+        self.display_title(ntpath.basename(sfile))
         self.display.clear()
 
     def _save(self):
@@ -440,9 +440,12 @@ class ControllerUnsafe(ControllerBase):
             self.kifu.sgffile = sfile
             self.kifu.save()
             self.err("-")
-            self.display.title("{0} - {1}".format(golib_conf.appname, ntpath.basename(sfile)))
+            self.display_title(ntpath.basename(sfile))
         else:
             self.log("Saving cancelled")
+
+    def display_title(self, title):
+        self.display.title("{0} - {1}".format(golib_conf.appname, title))
 
     def _select(self, move=None):
         """

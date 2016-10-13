@@ -277,4 +277,3 @@ class Kifu:
                     err("Opened new game")
         else:
             self._new()
-            log("Opened new game")
